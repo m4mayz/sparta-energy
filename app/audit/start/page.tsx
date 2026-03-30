@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { IconArrowRight, IconClock, IconInfoCircle } from "@tabler/icons-react"
 
+import { AuditStepIndicator } from "@/components/audit/step-indicator"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -65,15 +66,11 @@ export default function AuditStartPage() {
       />
 
       <main className="flex flex-col gap-8">
-        <section className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-6 rounded-full bg-primary" />
-            <span className="size-2 rounded-full bg-border" />
-            <span className="size-2 rounded-full bg-border" />
-          </div>
-          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Step 1: Parameter Toko
-          </p>
+        <section>
+          <AuditStepIndicator
+            currentStep={1}
+            label="Step 1: Parameter Toko"
+          />
         </section>
 
         <section className="flex flex-col gap-4">
@@ -264,7 +261,7 @@ export default function AuditStartPage() {
       <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center border-t border-border/60 bg-background/90 p-4 backdrop-blur">
         <div className="w-full max-w-sm">
           <Button className="h-11 w-full" asChild>
-            <Link href="#">
+            <Link href="/audit/equipment">
               Lanjut ke Input Equipment
               <IconArrowRight data-icon="inline-end" />
             </Link>

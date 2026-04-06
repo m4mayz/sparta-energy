@@ -71,14 +71,14 @@ function BottomNavigation({ activeItem }: BottomNavigationProps) {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex min-w-16 flex-col items-center justify-center rounded-2xl px-3 py-2 text-muted-foreground transition-all duration-150 active:scale-90",
+                    "flex w-20 flex-col items-center justify-center rounded-2xl px-3 py-2 text-muted-foreground transition-all duration-150 active:scale-90",
                     isActive
                       ? "bg-primary/15 text-sidebar-primary"
                       : "hover:text-foreground"
                   )}
                 >
                   <Icon className="size-5" stroke={isActive ? "2.5" : "1.7"} />
-                  <span className="mt-1 text-[7px] font-semibold tracking-wider uppercase">
+                  <span className="mt-1 text-[8px] font-semibold tracking-wider uppercase">
                     {item.label}
                   </span>
                 </Link>

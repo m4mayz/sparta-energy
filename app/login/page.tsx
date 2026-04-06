@@ -1,7 +1,7 @@
 "use client"
 
 import { LoginForm } from "@/components/login-form"
-import { IconLayoutRows } from "@tabler/icons-react"
+import { Logo } from "@/components/logo"
 
 export default function LoginPage() {
   return (
@@ -9,10 +9,7 @@ export default function LoginPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2">
           <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <IconLayoutRows className="size-4" />
-            </div>
-            SPARTA Energy
+            <Logo className="scale-95" />
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">

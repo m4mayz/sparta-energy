@@ -1,3 +1,5 @@
+"use client"
+
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -5,6 +7,7 @@ import {
   IconCheck,
   IconCircle,
 } from "@tabler/icons-react"
+import * as React from "react"
 
 import { Header } from "@/components/header"
 import { AuditStepIndicator } from "@/components/audit/step-indicator"
@@ -80,15 +83,15 @@ function Step2AreaCard({ item }: { item: AreaItem }) {
   )
 }
 
-export default function AuditEquipmentPage() {
+export function AuditStep2() {
   const canContinue = completedAreas === totalAreas
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-sm flex-col bg-background px-4 pb-32">
       <Header
         variant="dashboard-back"
-        title="Input Equipment"
-        backHref="/audit/start"
+        title="Kembali"
+        backHref="/audit/start?step=1"
         className="px-0"
       />
 
@@ -130,6 +133,22 @@ export default function AuditEquipmentPage() {
             <Step2AreaCard key={item.name} item={item} />
           ))}
         </section>
+
+        <Card className="overflow-hidden border-dashed bg-linear-to-r from-muted/55 to-muted/25 py-0">
+          <CardContent className="flex h-28 items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                Insight
+              </p>
+              <p className="text-sm font-semibold text-primary">
+                Lengkapi semua area untuk lanjut ke History kWh
+              </p>
+            </div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <IconBolt className="size-5" />
+            </span>
+          </CardContent>
+        </Card>
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center border-t border-border/60 bg-background/90 p-4 backdrop-blur">

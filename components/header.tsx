@@ -3,13 +3,9 @@
 import * as React from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import {
-  IconChevronLeft,
-  IconLayoutRows,
-  IconMoon,
-  IconSun,
-} from "@tabler/icons-react"
+import { IconChevronLeft, IconMoon, IconSun } from "@tabler/icons-react"
 
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -86,22 +82,13 @@ function Header(props: DashboardHeaderProps) {
       )}
     >
       {props.variant === "dashboard" ? (
-        <div className="flex h-8 items-center justify-between gap-3">
+        <div className="flex min-h-8 items-center justify-between gap-3">
           <Link
             href={props.logoHref ?? "/"}
-            className="flex h-full items-center gap-2.5"
+            className="flex items-center"
+            aria-label={props.appName ?? "SPARTA Energy"}
           >
-            <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <IconLayoutRows className="size-4" />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-xs text-muted-foreground">
-                Building & Maintenance
-              </span>
-              <span className="text-sm font-semibold">
-                {props.appName ?? "SPARTA Energy"}
-              </span>
-            </span>
+            <Logo className="origin-left scale-90 md:scale-95" />
           </Link>
 
           <Button

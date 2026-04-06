@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { IconArrowRight, IconLayoutRows } from "@tabler/icons-react"
+import { IconArrowRight } from "@tabler/icons-react"
 
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -15,9 +16,7 @@ export default function Page() {
     <main className="mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center bg-background px-4 py-8">
       <Card className="bg-linear-to-br from-primary/16 via-background to-background">
         <CardHeader className="items-center text-center">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <IconLayoutRows className="size-6" />
-          </div>
+          <Logo className="scale-95" />
           <CardTitle className="text-2xl">SPARTA Energy</CardTitle>
           <CardDescription>
             Sistem audit energi untuk memantau efisiensi toko, menemukan sumber

@@ -44,7 +44,7 @@ export default function DashboardPage() {
       <Header variant="dashboard" logoHref="/dashboard" />
 
       <section className="flex flex-col gap-5">
-        <Card className="border-primary/10 bg-muted/30">
+        {/* <Card className="border-primary/10 bg-muted/30">
           <CardContent className="space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -57,7 +57,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <HeroCard />
 

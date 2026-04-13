@@ -14,12 +14,15 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-const storeTypeOptions = ["Regular", "Advance", "Medium", "Basic"] as const
+const regularStoreType = "Regular" as const
+const beanspotStoreTypeOptions = ["Basic", "Medium", "Advance"] as const
+type StoreType =
+  | typeof regularStoreType
+  | (typeof beanspotStoreTypeOptions)[number]
 
 export function AuditStep1() {
   const router = useRouter()
-  const [storeType, setStoreType] =
-    React.useState<(typeof storeTypeOptions)[number]>("Regular")
+  const [storeType, setStoreType] = React.useState<StoreType>(regularStoreType)
   const [is24Hours, setIs24Hours] = React.useState(true)
   const [openTime, setOpenTime] = React.useState("07:00")
   const [closeTime, setCloseTime] = React.useState("22:00")
@@ -64,18 +67,26 @@ export function AuditStep1() {
                   <Input
                     id="kode_toko"
                     placeholder="ID-99281"
-                    defaultValue="ID-99281"
+                    className="text-xs"
                   />
                 </Field>
 
                 <Field>
                   <FieldLabel htmlFor="nama_toko">Nama Toko</FieldLabel>
-                  <Input id="nama_toko" placeholder="Masukkan nama toko" />
+                  <Input
+                    id="nama_toko"
+                    placeholder="Masukkan nama toko"
+                    className="text-xs"
+                  />
                 </Field>
 
                 <Field>
                   <FieldLabel htmlFor="cabang">Cabang</FieldLabel>
-                  <Input id="cabang" placeholder="Masukkan cabang" />
+                  <Input
+                    id="cabang"
+                    placeholder="Masukkan cabang"
+                    className="text-xs"
+                  />
                 </Field>
 
                 <Field>
@@ -83,7 +94,11 @@ export function AuditStep1() {
                     <FieldLabel htmlFor="id_pln">ID Pelanggan PLN</FieldLabel>
                     <IconInfoCircle className="size-4 text-muted-foreground" />
                   </div>
-                  <Input id="id_pln" placeholder="Masukkan ID pelanggan PLN" />
+                  <Input
+                    id="id_pln"
+                    placeholder="Masukkan ID pelanggan PLN"
+                    className="text-xs"
+                  />
                 </Field>
               </FieldGroup>
             </CardContent>
@@ -91,68 +106,105 @@ export function AuditStep1() {
         </section>
 
         <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-primary">
-            Tipe Toko (Beanspot)
-          </h2>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={1}
-            value={storeType}
-            onValueChange={(value) => {
-              if (value) {
-                setStoreType(value as (typeof storeTypeOptions)[number])
-              }
-            }}
-            className="flex w-full flex-wrap"
-          >
-            {storeTypeOptions.map((option) => (
-              <ToggleGroupItem
-                key={option}
-                value={option}
-                className="rounded-full px-4 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/90"
+          <h2 className="text-lg font-semibold text-primary">Tipe Toko</h2>
+
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Regular
+              </p>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                spacing={1}
+                value={storeType}
+                onValueChange={(value) => {
+                  if (value) {
+                    setStoreType(value as StoreType)
+                  }
+                }}
+                className="flex w-full flex-wrap"
               >
-                {option}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+                <ToggleGroupItem
+                  value={regularStoreType}
+                  className="rounded-full px-4 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/90"
+                >
+                  {regularStoreType}
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Beanspot
+              </p>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                spacing={1}
+                value={storeType}
+                onValueChange={(value) => {
+                  if (value) {
+                    setStoreType(value as StoreType)
+                  }
+                }}
+                className="flex w-full flex-wrap"
+              >
+                {beanspotStoreTypeOptions.map((option) => (
+                  <ToggleGroupItem
+                    key={option}
+                    value={option}
+                    className="rounded-full px-4 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:data-[state=on]:bg-primary/90"
+                  >
+                    {option}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          </div>
         </section>
 
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold text-primary">Teknis Toko</h2>
-          <div className="grid grid-cols-1 gap-3">
-            <Card className="bg-muted/45">
-              <CardHeader>
-                <CardTitle className="text-sm">Daya PLN</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  defaultValue={41.5}
-                  className="h-10 text-lg font-semibold text-primary"
-                />
-                <span className="rounded-md bg-primary/15 px-2 py-1 text-xs font-semibold text-primary">
-                  kVA
-                </span>
-              </CardContent>
-            </Card>
+          <Card>
+            <CardContent>
+              <FieldGroup className="gap-5">
+                <Field>
+                  <FieldLabel htmlFor="daya_pln">Daya PLN</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      id="daya_pln"
+                      type="number"
+                      defaultValue={41.5}
+                      className="pr-16 text-sm font-semibold"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                        kVA
+                      </span>
+                    </div>
+                  </div>
+                </Field>
 
-            <Card className="bg-muted/45">
-              <CardHeader>
-                <CardTitle className="text-sm">Luasan Toko</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  defaultValue={120}
-                  className="h-10 text-lg font-semibold text-primary"
-                />
-                <span className="rounded-md bg-primary/15 px-2 py-1 text-xs font-semibold text-primary">
-                  m²
-                </span>
-              </CardContent>
-            </Card>
-          </div>
+                <Field>
+                  <FieldLabel htmlFor="luasan_toko">Luasan Toko</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      id="luasan_toko"
+                      type="number"
+                      defaultValue={120}
+                      className="pr-16 text-sm font-semibold"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                        m²
+                      </span>
+                    </div>
+                  </div>
+                </Field>
+              </FieldGroup>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="flex flex-col gap-4">
@@ -173,9 +225,9 @@ export function AuditStep1() {
           {is24Hours ? (
             <Card className="bg-muted/40">
               <CardContent className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium">Jam buka-tutup</p>
+                <p className="text-sm font-medium">Jam buka tutup</p>
                 <p className="text-sm font-semibold text-primary">
-                  {displayOpenTime} - {displayCloseTime}
+                  {displayOpenTime} sampai {displayCloseTime}
                 </p>
               </CardContent>
             </Card>

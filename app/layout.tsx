@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { Suspense } from "react"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -70,7 +71,9 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <RouteProgress />
+          <Suspense fallback={null}>
+            <RouteProgress />
+          </Suspense>
           <OfflineIndicator />
           {children}
           <Toaster />

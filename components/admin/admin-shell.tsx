@@ -25,6 +25,7 @@ import {
 } from "@tabler/icons-react"
 import {
   Fragment,
+  Suspense,
   type ComponentType,
   type CSSProperties,
   type ReactNode,
@@ -658,7 +659,11 @@ function AdminHeaderActions({
 }) {
   return (
     <div className="ml-auto flex items-center gap-2">
-      {showDashboardFilters && <DashboardGlobalFilters />}
+      {showDashboardFilters && (
+        <Suspense fallback={null}>
+          <DashboardGlobalFilters />
+        </Suspense>
+      )}
       <ThemeModeToggle />
       <HeaderProfileMenu user={user} />
     </div>

@@ -34,7 +34,6 @@ export function LoginForm({
     const { error: signInError } = await signIn.email({
       email,
       password,
-      callbackURL: "/dashboard",
     })
 
     if (signInError) {
@@ -46,7 +45,12 @@ export function LoginForm({
       return
     }
 
-    router.push("/dashboard")
+    const redirectResponse = await fetch("/api/auth/redirect-path")
+    const redirectData = (await redirectResponse.json().catch(() => null)) as {
+      redirectTo?: string
+    } | null
+
+    router.push(redirectData?.redirectTo ?? "/dashboard")
   }
 
   return (

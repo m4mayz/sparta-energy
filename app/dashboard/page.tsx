@@ -18,10 +18,11 @@ export default async function DashboardPage() {
   // Get all audits for stores in user's branch
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { branch: true, fullName: true },
+    select: { branch: true, fullName: true, role: true },
   })
 
   if (!dbUser) redirect("/forbidden")
+  if (dbUser.role === "ADMIN") redirect("/admin/dashboard")
 
   // Fetch 5 most recent COMPLETED audits for this user
   const branches =

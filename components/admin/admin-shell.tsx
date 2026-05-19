@@ -2,17 +2,24 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useTheme } from "next-themes"
 import {
+  IconBuildingCommunity,
   IconBuildingStore,
+  IconCalendarStats,
+  IconCheck,
   IconChevronRight,
   IconClipboardList,
   IconDatabase,
+  IconDeviceDesktop,
   IconFileExport,
   IconKey,
   IconLayoutDashboard,
   IconLogout,
   IconMapPin,
+  IconMoon,
+  IconSun,
   IconTool,
   IconUsers,
 } from "@tabler/icons-react"
@@ -21,8 +28,12 @@ import {
   type ComponentType,
   type CSSProperties,
   type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
 } from "react"
 
+import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Breadcrumb,
@@ -32,6 +43,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +61,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import {
   Sidebar,
@@ -61,6 +94,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { signOut } from "@/lib/auth-client"
+import { cn } from "@/lib/utils"
 
 type AdminUser = {
   fullName: string | null
@@ -155,6 +189,18 @@ const navItems = [
   ...navGroups.flatMap((group) => group.items),
 ]
 
+const periodOptions = [
+  { value: "ytd", label: "YTD" },
+  { value: "month", label: "Bulan ini" },
+  { value: "custom", label: "Custom" },
+]
+
+const themeOptions = [
+  { value: "light", label: "Terang", icon: IconSun },
+  { value: "dark", label: "Gelap", icon: IconMoon },
+  { value: "system", label: "Sistem", icon: IconDeviceDesktop },
+] as const
+
 function getInitials(name: string | null, email: string) {
   const source = name?.trim() || email
   return source
@@ -191,14 +237,36 @@ function getBreadcrumbItems(pathname: string) {
   return [{ label: "Dashboard" }]
 }
 
+function getMonthOptions() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const formatter = new Intl.DateTimeFormat("id-ID", {
+    month: "short",
+    year: "numeric",
+  })
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const date = new Date(year, index, 1)
+    return {
+      value: `${year}-${String(index + 1).padStart(2, "0")}`,
+      label: formatter.format(date),
+    }
+  })
+}
+
+function getCurrentMonthValue() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
+
+async function handleLogout() {
+  await signOut()
+  window.location.href = "/login"
+}
+
 function AdminSidebar({ user }: { user: AdminUser }) {
   const pathname = usePathname()
   const isMobile = useIsMobile()
-
-  const handleLogout = async () => {
-    await signOut()
-    window.location.href = "/login"
-  }
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -209,26 +277,19 @@ function AdminSidebar({ user }: { user: AdminUser }) {
               asChild
               size="lg"
               tooltip="SPARTA Energy"
-              className="h-auto justify-center p-2 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
+              className="h-auto justify-center p-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
             >
               <Link href="/admin/dashboard">
-                <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/40 px-3 py-2 backdrop-blur-sm group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
+                <Logo className="scale-90 group-data-[collapsible=icon]:hidden" />
+                <div className="hidden size-8 items-center justify-center rounded-lg group-data-[collapsible=icon]:flex">
                   <Image
                     src="/assets/Building-Logo.png"
                     alt="SPARTA Energy"
                     width={60}
                     height={60}
-                    className="size-7 object-contain drop-shadow-sm group-data-[collapsible=icon]:size-6"
+                    className="size-6 object-contain drop-shadow-sm"
                     priority
                   />
-                  <div className="flex flex-col leading-none text-foreground group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-bold tracking-wider">
-                      SPARTA
-                    </span>
-                    <span className="text-[10px] font-medium opacity-80">
-                      Energy
-                    </span>
-                  </div>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -268,8 +329,11 @@ function AdminSidebar({ user }: { user: AdminUser }) {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg" className="group/profile-trigger">
-                  <Avatar size="sm">
+                <SidebarMenuButton
+                  size="lg"
+                  className="group/profile-trigger group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
+                >
+                  <Avatar>
                     {user.image && (
                       <AvatarImage
                         src={user.image}
@@ -328,6 +392,279 @@ function AdminSidebar({ user }: { user: AdminUser }) {
   )
 }
 
+function ThemeModeToggle() {
+  const { theme, setTheme } = useTheme()
+  const activeTheme = theme ?? "system"
+  const activeOption =
+    themeOptions.find((option) => option.value === activeTheme) ??
+    themeOptions[2]
+  const ActiveIcon = activeOption.icon
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          aria-label="Pilih tema"
+          title="Pilih tema"
+          className="bg-background/60"
+        >
+          <ActiveIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {themeOptions.map(({ value, label, icon: Icon }) => (
+          <DropdownMenuItem key={value} onClick={() => setTheme(value)}>
+            <Icon />
+            {label}
+            {activeTheme === value && <IconCheck className="ml-auto" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function HeaderProfileMenu({ user }: { user: AdminUser }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          aria-label="Profil"
+          title="Profil"
+          className="bg-background/60"
+        >
+          <Avatar>
+            {user.image && (
+              <AvatarImage src={user.image} alt={user.fullName ?? user.email} />
+            )}
+            <AvatarFallback>
+              {getInitials(user.fullName, user.email)}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>
+          <span className="block truncate font-medium text-foreground">
+            {user.fullName ?? "Admin"}
+          </span>
+          <span className="block truncate">{user.email}</span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href="#">
+              <IconKey />
+              Ganti Password
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+            <IconLogout />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function DashboardGlobalFilters() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [branches, setBranches] = useState<string[]>([])
+  const [isMonthOpen, setIsMonthOpen] = useState(false)
+  const monthOptions = useMemo(() => getMonthOptions(), [])
+
+  const period = searchParams.get("period") ?? "ytd"
+  const branch = searchParams.get("branch") ?? "all"
+  const selectedMonths = useMemo(
+    () =>
+      (searchParams.get("months") ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [searchParams]
+  )
+
+  useEffect(() => {
+    let isMounted = true
+
+    fetch("/admin/dashboard/filter-options")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { branches?: string[] } | null) => {
+        if (isMounted) setBranches(data?.branches ?? [])
+      })
+      .catch(() => {
+        if (isMounted) setBranches([])
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  function updateParams(next: {
+    period?: string
+    branch?: string
+    months?: string[]
+  }) {
+    const params = new URLSearchParams(searchParams)
+    const nextPeriod = next.period ?? period
+    const nextBranch = next.branch ?? branch
+    const nextMonths = next.months ?? selectedMonths
+
+    if (nextPeriod === "ytd") params.delete("period")
+    else params.set("period", nextPeriod)
+
+    if (nextPeriod === "custom") {
+      const months =
+        nextMonths.length > 0 ? nextMonths : [getCurrentMonthValue()]
+      params.set("months", months.join(","))
+    } else {
+      params.delete("months")
+    }
+
+    if (nextBranch !== "all") params.set("branch", nextBranch)
+    else params.delete("branch")
+
+    const qs = params.toString()
+    router.push(qs ? `${pathname}?${qs}` : pathname)
+  }
+
+  function toggleMonth(value: string) {
+    const nextMonths = selectedMonths.includes(value)
+      ? selectedMonths.filter((item) => item !== value)
+      : [...selectedMonths, value].sort()
+
+    updateParams({
+      period: "custom",
+      months: nextMonths.length > 0 ? nextMonths : [value],
+    })
+  }
+
+  const selectedMonthLabels = selectedMonths
+    .map((value) => monthOptions.find((month) => month.value === value)?.label)
+    .filter(Boolean)
+
+  return (
+    <div className="hidden items-center gap-2 lg:flex">
+      <Select
+        value={period}
+        onValueChange={(value) => updateParams({ period: value })}
+      >
+        <SelectTrigger size="sm" className="w-32 bg-background/60">
+          <IconCalendarStats className="size-4" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectGroup>
+            {periodOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+
+      {period === "custom" && (
+        <Popover open={isMonthOpen} onOpenChange={setIsMonthOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="max-w-44 justify-start bg-background/60"
+            >
+              <span className="truncate">
+                {selectedMonthLabels.length > 0
+                  ? selectedMonthLabels.join(", ")
+                  : "Pilih bulan"}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-1">
+            <Command>
+              <CommandInput placeholder="Cari bulan..." />
+              <CommandList>
+                <CommandEmpty>Bulan tidak ditemukan.</CommandEmpty>
+                <CommandGroup>
+                  {monthOptions.map((month) => {
+                    const isSelected = selectedMonths.includes(month.value)
+
+                    return (
+                      <CommandItem
+                        key={month.value}
+                        data-checked={isSelected}
+                        onSelect={() => toggleMonth(month.value)}
+                      >
+                        <span
+                          className={cn(
+                            "flex size-4 items-center justify-center rounded border",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border"
+                          )}
+                        >
+                          {isSelected && <IconCheck className="size-3" />}
+                        </span>
+                        {month.label}
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      <Select
+        value={branch}
+        onValueChange={(value) => updateParams({ branch: value })}
+      >
+        <SelectTrigger size="sm" className="w-44 bg-background/60">
+          <IconBuildingCommunity className="size-4" />
+          <SelectValue placeholder="Semua Cabang" />
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectGroup>
+            <SelectItem value="all">Semua Cabang</SelectItem>
+            {branches.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function AdminHeaderActions({
+  user,
+  showDashboardFilters,
+}: {
+  user: AdminUser
+  showDashboardFilters: boolean
+}) {
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      {showDashboardFilters && <DashboardGlobalFilters />}
+      <ThemeModeToggle />
+      <HeaderProfileMenu user={user} />
+    </div>
+  )
+}
+
 function AdminSidebarItem({
   item,
   pathname,
@@ -363,9 +700,10 @@ function AdminSidebarItem({
   )
 }
 
-function AdminSiteHeader() {
+function AdminSiteHeader({ user }: { user: AdminUser }) {
   const pathname = usePathname()
   const breadcrumbItems = getBreadcrumbItems(pathname)
+  const showDashboardFilters = pathname === "/admin/dashboard"
 
   return (
     <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center gap-2 border-b border-border/60 bg-background/78 shadow-[0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) supports-[backdrop-filter]:bg-background/70">
@@ -401,6 +739,10 @@ function AdminSiteHeader() {
             })}
           </BreadcrumbList>
         </Breadcrumb>
+        <AdminHeaderActions
+          user={user}
+          showDashboardFilters={showDashboardFilters}
+        />
       </div>
     </header>
   )
@@ -419,7 +761,7 @@ export function AdminShell({ user, children }: AdminShellProps) {
       >
         <AdminSidebar user={user} />
         <SidebarInset>
-          <AdminSiteHeader />
+          <AdminSiteHeader user={user} />
           <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
               <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">

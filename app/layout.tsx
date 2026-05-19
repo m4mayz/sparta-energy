@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { RouteProgress } from "@/components/route-progress"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
@@ -69,6 +70,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
+          <RouteProgress />
           <OfflineIndicator />
           {children}
           <Toaster />

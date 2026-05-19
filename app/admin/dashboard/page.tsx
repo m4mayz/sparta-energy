@@ -5,6 +5,7 @@ import {
   IconLeaf,
   IconTrendingUp,
 } from "@tabler/icons-react"
+import type { Prisma } from "@prisma/client"
 
 import {
   EfficiencyBreakdownChart,
@@ -28,6 +29,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { prisma } from "@/lib/prisma"
+
+type SearchParams = Promise<{
+  period?: string
+  months?: string
+  branch?: string
+}>
 
 const numberFormat = new Intl.NumberFormat("id-ID")
 const compactNumberFormat = new Intl.NumberFormat("id-ID", {
@@ -70,6 +77,74 @@ const storeBranchFilter = {
       branch: { notIn: excludedBranchNames },
     },
   ],
+}
+
+function getStartOfMonth(year: number, monthIndex: number) {
+  return new Date(year, monthIndex, 1, 0, 0, 0, 0)
+}
+
+function getStartOfNextMonth(year: number, monthIndex: number) {
+  return new Date(year, monthIndex + 1, 1, 0, 0, 0, 0)
+}
+
+function parseMonthValue(value: string) {
+  const match = /^(\d{4})-(\d{2})$/.exec(value)
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (!Number.isInteger(year) || month < 1 || month > 12) return null
+
+  return { year, monthIndex: month - 1 }
+}
+
+function getAuditDateFilter(params: Awaited<SearchParams>) {
+  const now = new Date()
+  const period = params.period ?? "ytd"
+
+  if (period === "month") {
+    return {
+      gte: getStartOfMonth(now.getFullYear(), now.getMonth()),
+      lt: getStartOfNextMonth(now.getFullYear(), now.getMonth()),
+    }
+  }
+
+  if (period === "custom") {
+    const monthRanges = (params.months ?? "")
+      .split(",")
+      .map((item) => parseMonthValue(item.trim()))
+      .filter((item): item is { year: number; monthIndex: number } =>
+        Boolean(item)
+      )
+
+    if (monthRanges.length > 0) {
+      return {
+        OR: monthRanges.map((item) => ({
+          auditDate: {
+            gte: getStartOfMonth(item.year, item.monthIndex),
+            lt: getStartOfNextMonth(item.year, item.monthIndex),
+          },
+        })),
+      }
+    }
+  }
+
+  return {
+    gte: new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0),
+    lte: now,
+  }
+}
+
+function getStoreFilter(params: Awaited<SearchParams>): Prisma.StoreWhereInput {
+  const branch = params.branch?.trim()
+
+  if (branch && branch !== "all") {
+    return {
+      AND: [{ branch }, { branch: { notIn: excludedBranchNames } }],
+    }
+  }
+
+  return storeBranchFilter
 }
 
 function formatNumber(value: number) {
@@ -169,16 +244,31 @@ function getConsumptionTrend(audits: CompletedAuditRow[]) {
     }))
 }
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}) {
+  const params = await searchParams
+  const storeFilter = getStoreFilter(params)
+  const auditDateFilter = getAuditDateFilter(params)
+  const auditWhere: Prisma.AuditWhereInput = {
+    status: "COMPLETED",
+    store: storeFilter,
+  }
+
+  if ("OR" in auditDateFilter) {
+    auditWhere.OR = auditDateFilter.OR
+  } else {
+    auditWhere.auditDate = auditDateFilter
+  }
+
   const [totalStores, completedAudits] = await Promise.all([
     prisma.store.count({
-      where: storeBranchFilter,
+      where: storeFilter,
     }),
     prisma.audit.findMany({
-      where: {
-        status: "COMPLETED",
-        store: storeBranchFilter,
-      },
+      where: auditWhere,
       orderBy: { auditDate: "desc" },
       select: {
         id: true,

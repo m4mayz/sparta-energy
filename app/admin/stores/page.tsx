@@ -1,18 +1,10 @@
 import { AdminStoreFilters } from "@/components/admin/admin-store-filters"
 import { AdminStoresTable } from "@/components/admin/admin-stores-table"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   adminStoresPageSize,
   getAdminStoreBranches,
   getAdminStoreCount,
   getAdminStoreRows,
-  getAdminStoreStats,
   getAdminStoreTypes,
   parseAdminStoreSort,
   parseSortOrder,
@@ -28,10 +20,12 @@ type SearchParams = Promise<{
   order?: string
 }>
 
-const numberFormat = new Intl.NumberFormat("id-ID")
-
 function getFilter(value: string | undefined) {
   return value?.trim() || "all"
+}
+
+function formatNumber(value: number | bigint) {
+  return new Intl.NumberFormat("id-ID").format(Number(value))
 }
 
 export default async function AdminStoresPage({
@@ -49,9 +43,8 @@ export default async function AdminStoresPage({
     order: parseSortOrder(params.order),
   }
 
-  const [stats, branches, storeTypes, totalFilteredRows, initialResult] =
+  const [branches, storeTypes, totalFilteredRows, initialResult] =
     await Promise.all([
-      getAdminStoreStats(),
       getAdminStoreBranches(),
       getAdminStoreTypes(),
       getAdminStoreCount(filters),
@@ -62,26 +55,27 @@ export default async function AdminStoresPage({
       }),
     ])
 
-  const totalStores = Number(stats.total_stores)
-  const auditedStores = Number(stats.audited_stores)
-  const hematStores = Number(stats.hemat_stores)
-  const borosStores = Number(stats.boros_stores)
-  const coverage =
-    totalStores > 0 ? Math.round((auditedStores / totalStores) * 1000) / 10 : 0
-
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="min-h-0">
-        <div className="sticky top-0 z-20 border-y bg-card/95 px-6 py-4 shadow-sm backdrop-blur supports-backdrop-filter:bg-card/80">
+    <div className="-mt-4 flex min-h-[calc(100svh-var(--header-height)-1rem)] flex-col md:-mt-6 md:min-h-[calc(100svh-var(--header-height))]">
+      <section className="flex min-h-0 flex-1 flex-col">
+        <div className="sticky top-(--header-height) z-20 -mx-4 border-y bg-background/90 px-4 py-4 backdrop-blur supports-backdrop-filter:bg-background/75 md:-mx-6 md:px-6">
           <AdminStoreFilters branches={branches} storeTypes={storeTypes} />
         </div>
-        <AdminStoresTable
-          initialRows={initialResult.rows}
-          initialHasMore={initialResult.hasMore}
-          totalRows={totalFilteredRows}
-          filters={filters}
-        />
-      </Card>
+
+        <div className="-mx-4 flex min-h-0 flex-1 flex-col border-y px-3 md:-mx-6 md:px-4">
+          <div className="py-3 text-xs text-muted-foreground">
+            Menampilkan {formatNumber(totalFilteredRows)} toko sesuai filter.
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col border-t">
+            <AdminStoresTable
+              initialRows={initialResult.rows}
+              initialHasMore={initialResult.hasMore}
+              totalRows={totalFilteredRows}
+              filters={filters}
+            />
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

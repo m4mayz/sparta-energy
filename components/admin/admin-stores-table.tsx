@@ -219,10 +219,10 @@ export function AdminStoresTable({
   }
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="max-h-[calc(100vh-24rem)] min-h-80 overflow-auto md:max-h-[calc(100vh-22rem)]">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-auto bg-background">
         <Table className="min-w-[940px] text-xs [&_td]:px-2 [&_td]:py-2 [&_th]:h-9 [&_th]:px-2">
-          <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_var(--border)]">
+          <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border)]">
             <TableRow>
               <TableHead>
                 <SortableHeader column="store">Toko</SortableHeader>

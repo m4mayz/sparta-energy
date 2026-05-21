@@ -1,22 +1,9 @@
-import {
-  IconBolt,
-  IconMapPin,
-  IconTag,
-  IconTool,
-  type Icon,
-} from "@tabler/icons-react"
+import { IconBolt, IconMapPin, IconTag, IconTool } from "@tabler/icons-react"
 
 import { AdminEquipmentBreakdowns } from "@/components/admin/admin-equipment-breakdowns"
 import { AdminEquipmentFilters } from "@/components/admin/admin-equipment-filters"
 import { AdminEquipmentTable } from "@/components/admin/admin-equipment-table"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { AdminMetricCard } from "@/components/admin/admin-metric-card"
 import {
   adminEquipmentPageSize,
   getAdminEquipmentAreaBreakdown,
@@ -61,45 +48,6 @@ function formatNumber(value: number, suffix = "") {
 
 function averagePerStore(value: number, storeCount: number) {
   return storeCount > 0 ? value / storeCount : 0
-}
-
-function KpiItem({
-  label,
-  value,
-  icon: Icon,
-  rows,
-}: {
-  label: string
-  value: string
-  icon: Icon
-  rows: Array<{ label: string; value: string }>
-}) {
-  return (
-    <Card size="sm">
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-xl">{value}</CardTitle>
-        <CardAction>
-          <Icon className="size-5 text-muted-foreground" />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-2 text-xs">
-          {rows.map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between gap-3"
-            >
-              <span className="truncate text-muted-foreground">
-                {row.label}
-              </span>
-              <span className="shrink-0 font-medium">{row.value}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 export default async function AdminEquipmentPage({
@@ -157,10 +105,12 @@ export default async function AdminEquipmentPage({
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="-mx-4 flex min-h-0 flex-1 flex-col border-y md:-mx-6">
           <div className="grid gap-3 px-4 py-4 md:grid-cols-2 md:px-6 xl:grid-cols-4">
-            <KpiItem
+            <AdminMetricCard
               label="Total Equipment Terdata"
               value={formatNumber(summary.totalItems)}
               icon={IconTool}
+              tone="info"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Total Qty",
@@ -168,10 +118,12 @@ export default async function AdminEquipmentPage({
                 },
               ]}
             />
-            <KpiItem
+            <AdminMetricCard
               label="Rata-rata Konsumsi"
               value={formatNumber(avgDailyKwhPerStore, " kWh/hari/toko")}
               icon={IconBolt}
+              tone="success"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Estimasi Bulanan/Toko",
@@ -179,10 +131,12 @@ export default async function AdminEquipmentPage({
                 },
               ]}
             />
-            <KpiItem
+            <AdminMetricCard
               label="Area & Equipment Dominan"
               value={topArea}
               icon={IconMapPin}
+              tone="default"
+              valueClassName="text-xl"
               rows={[
                 { label: "Top Equipment", value: topEquipment },
                 {
@@ -191,10 +145,12 @@ export default async function AdminEquipmentPage({
                 },
               ]}
             />
-            <KpiItem
+            <AdminMetricCard
               label="Brand Dominan"
               value={topBrand}
               icon={IconTag}
+              tone="default"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Brand kWh/Hari/Toko",

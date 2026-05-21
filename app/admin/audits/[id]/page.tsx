@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-react"
 
 import { ConsumptionTrendChart } from "@/components/admin/admin-dashboard-charts"
+import { AdminMetricCard } from "@/components/admin/admin-metric-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -136,41 +137,6 @@ function StatusBadge({ isBoros }: { isBoros: boolean | null }) {
       <IconLeaf data-icon="inline-start" />
       Hemat
     </Badge>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  icon: Icon,
-  tone = "default",
-}: {
-  label: string
-  value: string
-  description: string
-  icon: typeof IconBolt
-  tone?: "default" | "danger" | "success"
-}) {
-  return (
-    <Card
-      size="sm"
-      className={cn(
-        tone === "danger" && "ring-destructive/30",
-        tone === "success" && "ring-primary/30"
-      )}
-    >
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl">{value}</CardTitle>
-        <CardAction>
-          <Icon className="size-5 text-muted-foreground" />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -343,20 +309,21 @@ export default async function AdminAuditDetailPage({
       </div>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
+        <AdminMetricCard
           label="Actual PLN"
           value={formatNumber(audit.actualPln, " kWh")}
           description="Rata-rata PLN dari audit ini"
           icon={IconBolt}
           tone={audit.isBoros ? "danger" : "success"}
         />
-        <MetricCard
+        <AdminMetricCard
           label="Baseline"
           value={formatNumber(audit.baseline, " kWh")}
           description="Estimasi wajar dari equipment"
           icon={IconChartBar}
+          tone="default"
         />
-        <MetricCard
+        <AdminMetricCard
           label="Gap"
           value={`${audit.gapKwh > 0 ? "+" : ""}${formatNumber(
             audit.gapKwh,
@@ -366,11 +333,12 @@ export default async function AdminAuditDetailPage({
           icon={IconAlertTriangle}
           tone={audit.isBoros ? "danger" : "default"}
         />
-        <MetricCard
+        <AdminMetricCard
           label="Total Equipment"
           value={formatNumber(audit.totalQty)}
           description={`${formatNumber(audit.totalMonthlyKwh, " kWh/bln")} estimasi`}
           icon={IconTool}
+          tone="info"
         />
       </section>
 

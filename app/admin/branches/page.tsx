@@ -9,10 +9,10 @@ import {
   IconSortDescending,
 } from "@tabler/icons-react"
 
+import { AdminMetricCard } from "@/components/admin/admin-metric-card"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -427,57 +427,6 @@ async function getBranchDominantRows(params: Awaited<SearchParams>) {
   }))
 }
 
-function BentoMetric({
-  label,
-  value,
-  icon: Icon,
-  tone = "default",
-  rows,
-  className,
-}: {
-  label: string
-  value: string
-  icon: typeof IconProgressCheck
-  tone?: "default" | "primary" | "destructive"
-  rows: Array<{ label: string; value: string }>
-  className?: string
-}) {
-  return (
-    <Card size="sm" className={className}>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-xl">{value}</CardTitle>
-        <CardAction>
-          <Icon
-            className={
-              tone === "primary"
-                ? "size-5 text-primary"
-                : tone === "destructive"
-                  ? "size-5 text-destructive"
-                  : "size-5 text-muted-foreground"
-            }
-          />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-2 text-xs">
-          {rows.map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between gap-3"
-            >
-              <span className="truncate text-muted-foreground">
-                {row.label}
-              </span>
-              <span className="shrink-0 font-medium">{row.value}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 function SortableHeader({
   children,
   column,
@@ -541,51 +490,34 @@ export default async function AdminBranchesPage({
       <section className="flex min-h-0 flex-1 flex-col">
         <div className="-mx-4 flex min-h-0 flex-1 flex-col border-y md:-mx-6">
           <div className="grid auto-rows-fr gap-3 px-4 py-4 md:grid-cols-2 md:px-6 xl:grid-cols-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardDescription>Performa Cabang</CardDescription>
-                <CardTitle className="text-xl">
-                  {formatPercent(coverage)}
-                </CardTitle>
-                <CardAction>
-                  <IconProgressCheck className="size-5 text-muted-foreground" />
-                </CardAction>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <AdminMetricCard
+              label="Performa Cabang"
+              value={formatPercent(coverage)}
+              icon={IconProgressCheck}
+              tone="info"
+              valueClassName="text-xl"
+              rows={[
+                { label: "Cabang", value: formatNumber(rows.length) },
+                { label: "Toko", value: formatNumber(totalStores) },
+                { label: "Boros", value: formatNumber(borosStores) },
+              ]}
+            >
+              <div className="mt-3">
                 <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="rounded-full bg-primary"
                     style={{ width: `${coverage}%` }}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Cabang</p>
-                    <p className="mt-0.5 font-medium">
-                      {formatNumber(rows.length)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Toko</p>
-                    <p className="mt-0.5 font-medium">
-                      {formatNumber(totalStores)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Boros</p>
-                    <p className="mt-0.5 font-medium">
-                      {formatNumber(borosStores)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminMetricCard>
 
-            <BentoMetric
+            <AdminMetricCard
               label="Cabang Paling Efisien"
               value={bestBranch?.branch ?? "-"}
               icon={IconLeaf}
-              tone="primary"
+              tone="success"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Boros Rate",
@@ -598,11 +530,12 @@ export default async function AdminBranchesPage({
               ]}
             />
 
-            <BentoMetric
+            <AdminMetricCard
               label="Cabang Paling Boros"
               value={worstBranch?.branch ?? "-"}
               icon={IconAlertTriangle}
-              tone="destructive"
+              tone="danger"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Boros Rate",
@@ -621,10 +554,12 @@ export default async function AdminBranchesPage({
               ]}
             />
 
-            <BentoMetric
+            <AdminMetricCard
               label="Coverage Terendah"
               value={lowCoverageBranch?.branch ?? "-"}
               icon={IconBuildingStore}
+              tone="default"
+              valueClassName="text-xl"
               rows={[
                 {
                   label: "Coverage",

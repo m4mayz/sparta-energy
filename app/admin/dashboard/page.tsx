@@ -9,10 +9,10 @@ import {
 import type { Prisma } from "@prisma/client"
 
 import { ConsumptionTrendChart } from "@/components/admin/admin-dashboard-charts"
+import { AdminMetricCard } from "@/components/admin/admin-metric-card"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -442,40 +442,34 @@ export default async function AdminDashboardPage({
   return (
     <div className="flex flex-col gap-6">
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card size="sm">
-          <CardHeader>
-            <CardDescription>Total Audited Stores</CardDescription>
-            <CardTitle className="text-3xl">
-              {numberFormat.format(auditedStores)}
-            </CardTitle>
-            <CardAction>
-              <IconBuildingStore className="size-5 text-muted-foreground" />
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-3 text-xs">
-              <span className="text-muted-foreground">Total Stores</span>
-              <span className="font-medium">{formatNumber(totalStores)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-              <span className="text-muted-foreground">Coverage</span>
-              <span className="font-medium">{coverage.toFixed(1)}%</span>
-            </div>
-            <Link
-              href={branchSummaryHref}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
-            >
-              Lihat performa cabang
-              <IconArrowRight className="size-3.5" />
-            </Link>
-          </CardContent>
-        </Card>
+        <AdminMetricCard
+          label="Total Audited Stores"
+          value={numberFormat.format(auditedStores)}
+          icon={IconBuildingStore}
+          tone="info"
+          valueClassName="text-3xl"
+          rows={[
+            { label: "Total Stores", value: formatNumber(totalStores) },
+            { label: "Coverage", value: `${coverage.toFixed(1)}%` },
+          ]}
+        >
+          <Link
+            href={branchSummaryHref}
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
+          >
+            Lihat performa cabang
+            <IconArrowRight className="size-3.5" />
+          </Link>
+        </AdminMetricCard>
 
-        <Card size="sm" className="justify-between xl:col-span-2">
-          <CardHeader>
-            <CardDescription>Status Efisiensi</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <AdminMetricCard
+          label="Status Efisiensi"
+          value={`${formatPercent(hematPercent)} Hemat`}
+          icon={IconLeaf}
+          tone={borosPercent > hematPercent ? "danger" : "success"}
+          className="justify-between xl:col-span-2"
+        >
+          <div className="mt-3 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -524,41 +518,21 @@ export default async function AdminDashboardPage({
                 <div className="w-full bg-muted-foreground/20" />
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </AdminMetricCard>
 
-        <Card size="sm" className="justify-between">
-          <CardHeader>
-            <CardDescription>Consumption Overview</CardDescription>
-
-            <CardAction>
-              <Badge
-                variant={consumptionGap > 0 ? "destructive" : "default"}
-                className="capitalize"
-              >
-                <IconTrendingUp data-icon="inline-start" />
-                Gap {consumptionGap > 0 ? "+" : ""}
-                {consumptionGap.toFixed(1)}%
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <p className="text-muted-foreground">Avg PLN kWh</p>
-                <p className="mt-1 text-base font-semibold">
-                  {formatCompact(avgActual)}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Avg Baseline</p>
-                <p className="mt-1 text-base font-semibold">
-                  {formatCompact(avgBaseline)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminMetricCard
+          label="Consumption Overview"
+          value={`Gap ${consumptionGap > 0 ? "+" : ""}${consumptionGap.toFixed(
+            1
+          )}%`}
+          icon={IconTrendingUp}
+          tone={consumptionGap > 0 ? "danger" : "success"}
+          rows={[
+            { label: "Avg PLN kWh", value: formatCompact(avgActual) },
+            { label: "Avg Baseline", value: formatCompact(avgBaseline) },
+          ]}
+        />
       </section>
 
       <section>

@@ -17,6 +17,7 @@ import {
 } from "@tabler/icons-react"
 
 import { ConsumptionTrendChart } from "@/components/admin/admin-dashboard-charts"
+import { AdminMetricCard } from "@/components/admin/admin-metric-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -139,41 +140,6 @@ function StatusBadge({ status }: { status: "hemat" | "boros" }) {
       <IconLeaf data-icon="inline-start" />
       Hemat
     </Badge>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  icon: Icon,
-  tone = "default",
-}: {
-  label: string
-  value: string
-  description: string
-  icon: typeof IconBolt
-  tone?: "default" | "danger" | "success"
-}) {
-  return (
-    <Card
-      size="sm"
-      className={cn(
-        tone === "danger" && "ring-destructive/30",
-        tone === "success" && "ring-primary/30"
-      )}
-    >
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl">{value}</CardTitle>
-        <CardAction>
-          <Icon className="size-5 text-muted-foreground" />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -349,7 +315,7 @@ export default async function AdminStoreDetailPage({
       </div>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
+        <AdminMetricCard
           label="Actual PLN"
           value={
             latestAudit ? formatNumber(latestAudit.actualPln, " kWh") : "-"
@@ -358,13 +324,14 @@ export default async function AdminStoreDetailPage({
           icon={IconBolt}
           tone={latestAudit?.isBoros ? "danger" : "success"}
         />
-        <MetricCard
+        <AdminMetricCard
           label="Baseline"
           value={latestAudit ? formatNumber(latestAudit.baseline, " kWh") : "-"}
           description="Estimasi wajar dari equipment"
           icon={IconChartBar}
+          tone="default"
         />
-        <MetricCard
+        <AdminMetricCard
           label="Gap"
           value={
             latestAudit
@@ -382,7 +349,7 @@ export default async function AdminStoreDetailPage({
           icon={IconAlertTriangle}
           tone={latestAudit?.isBoros ? "danger" : "default"}
         />
-        <MetricCard
+        <AdminMetricCard
           label="kWh/m²"
           value={
             latestAudit
@@ -391,6 +358,7 @@ export default async function AdminStoreDetailPage({
           }
           description="Intensitas aktual per luas toko"
           icon={IconRulerMeasure}
+          tone="info"
         />
       </section>
 
@@ -473,7 +441,7 @@ export default async function AdminStoreDetailPage({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Toko ini belum memiliki audit completed.
+                Toko ini belum pernah diaudit.
               </p>
             )}
           </CardContent>

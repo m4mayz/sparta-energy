@@ -275,15 +275,36 @@ function AdminSidebar({ user }: { user: AdminUser }) {
   const isMobile = useIsMobile()
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      variant="sidebar"
+      className="[&_[data-slot=sidebar-inner]]:relative [&_[data-slot=sidebar-inner]]:overflow-hidden"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(180deg,var(--sidebar)_0%,color-mix(in_oklch,var(--sidebar)_88%,var(--primary)_12%)_48%,var(--sidebar)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 [background-image:linear-gradient(to_right,var(--sidebar-foreground)_1px,transparent_1px),linear-gradient(to_bottom,var(--sidebar-foreground)_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.045]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-28 bg-linear-to-b from-primary/10 to-transparent"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-px bg-linear-to-b from-transparent via-primary/35 to-transparent"
+      />
+
+      <SidebarHeader className="relative z-10">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               size="lg"
               tooltip="SPARTA Energy"
-              className="h-auto justify-center p-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
+              className="h-auto justify-center bg-background/35 p-2 shadow-[0_12px_32px_-26px_var(--primary)] ring-1 ring-sidebar-border/70 backdrop-blur transition-all group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0! hover:bg-sidebar-accent/70 hover:shadow-[0_14px_36px_-24px_var(--primary)]"
             >
               <Link href="/admin/dashboard">
                 <Logo className="scale-90 group-data-[collapsible=icon]:hidden" />
@@ -303,7 +324,7 @@ function AdminSidebar({ user }: { user: AdminUser }) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="relative z-10">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -314,7 +335,9 @@ function AdminSidebar({ user }: { user: AdminUser }) {
 
         {navGroups.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sidebar-foreground/55 group-data-[collapsible=icon]:opacity-0">
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -330,7 +353,7 @@ function AdminSidebar({ user }: { user: AdminUser }) {
         ))}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="relative z-10">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -338,7 +361,7 @@ function AdminSidebar({ user }: { user: AdminUser }) {
                 <SidebarMenuButton
                   id="admin-sidebar-profile-trigger"
                   size="lg"
-                  className="group/profile-trigger group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
+                  className="group/profile-trigger bg-background/30 shadow-[0_12px_28px_-24px_var(--sidebar-foreground)] ring-1 ring-sidebar-border/60 backdrop-blur transition-all group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center hover:bg-sidebar-accent/70 hover:shadow-[0_14px_34px_-24px_var(--primary)]"
                 >
                   <Avatar>
                     {user.image && (
@@ -714,6 +737,14 @@ function AdminSidebarItem({
         disabled={item.disabled}
         isActive={isActive}
         tooltip={item.label}
+        className={cn(
+          "relative transition-[background-color,box-shadow,color,transform] duration-200 hover:bg-sidebar-accent/70 hover:shadow-[0_12px_30px_-24px_var(--primary)] [&_svg]:transition-colors",
+          "after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:bg-linear-to-r after:from-primary/10 after:via-chart-1/8 after:to-transparent after:opacity-0 after:transition-opacity",
+          "hover:after:opacity-100",
+          isActive &&
+            "bg-sidebar-accent/85 text-sidebar-accent-foreground shadow-[0_14px_34px_-24px_var(--primary)] ring-1 ring-sidebar-border/70 after:opacity-100 [&_svg]:text-primary",
+          item.disabled && "opacity-55 hover:shadow-none hover:after:opacity-0"
+        )}
       >
         {item.disabled ? (
           <>

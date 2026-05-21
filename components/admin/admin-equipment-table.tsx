@@ -274,7 +274,7 @@ export function AdminEquipmentTable({
                 </TableCell>
                 <TableCell>
                   <Link
-                    href={`/audit/${item.auditId}`}
+                    href={`/admin/audits/${item.auditId}`}
                     className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
                   >
                     <IconClipboardCheck className="size-4" />

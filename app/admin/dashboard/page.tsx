@@ -603,7 +603,7 @@ export default async function AdminDashboardPage({
                     <TableRow key={store.id}>
                       <TableCell className="pl-6 font-medium">
                         <Link
-                          href={`/audit/${store.id}`}
+                          href={`/admin/audits/${store.id}`}
                           className={tableLinkClass}
                         >
                           {store.code}

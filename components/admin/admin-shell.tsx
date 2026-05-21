@@ -229,6 +229,13 @@ function getBreadcrumbItems(pathname: string) {
     ]
   }
 
+  if (pathname.startsWith("/admin/audits/")) {
+    return [
+      { label: "Riwayat Audit", href: "/admin/audits" },
+      { label: "Detail Audit" },
+    ]
+  }
+
   if (currentPage) {
     return [{ label: currentPage.label }]
   }

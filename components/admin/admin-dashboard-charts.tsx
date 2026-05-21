@@ -80,8 +80,10 @@ function formatTooltipValue(value: unknown, key: string) {
 
 export function ConsumptionTrendChart({
   data,
+  showBaseline = true,
 }: {
   data: ConsumptionTrendPoint[]
+  showBaseline?: boolean
 }) {
   return (
     <ChartContainer
@@ -171,15 +173,17 @@ export function ConsumptionTrendChart({
           }
         />
         <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
-        <Area
-          yAxisId="kwh"
-          dataKey="baseline"
-          type="monotone"
-          stroke="var(--color-baseline)"
-          strokeDasharray="5 5"
-          strokeWidth={1.5}
-          fill="transparent"
-        />
+        {showBaseline ? (
+          <Area
+            yAxisId="kwh"
+            dataKey="baseline"
+            type="monotone"
+            stroke="var(--color-baseline)"
+            strokeDasharray="5 5"
+            strokeWidth={1.5}
+            fill="transparent"
+          />
+        ) : null}
         <Area
           yAxisId="std"
           dataKey="std"

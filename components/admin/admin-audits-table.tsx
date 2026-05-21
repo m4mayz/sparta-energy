@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react"
 import {
   IconAlertTriangle,
   IconClipboardCheck,
-  IconEye,
   IconLeaf,
   IconLoader2,
 } from "@tabler/icons-react"
@@ -177,7 +176,7 @@ export function AdminAuditsTable({
                     <div className="min-w-0">
                       <p className="font-medium">
                         <Link
-                          href={`/audit/${audit.id}`}
+                          href={`/admin/audits/${audit.id}`}
                           className={tableLinkClass}
                         >
                           {audit.store.code}

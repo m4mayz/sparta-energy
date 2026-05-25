@@ -147,7 +147,6 @@ const navGroups: AdminNavGroup[] = [
         label: "User & Akses",
         href: "/admin/users",
         icon: IconUsers,
-        disabled: true,
       },
       {
         label: "Master Data",

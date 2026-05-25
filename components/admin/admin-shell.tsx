@@ -137,7 +137,6 @@ const navGroups: AdminNavGroup[] = [
         label: "Reports & Export",
         href: "/admin/reports",
         icon: IconFileExport,
-        disabled: true,
       },
     ],
   },

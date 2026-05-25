@@ -74,6 +74,8 @@ export function RouteProgress() {
       if (!(anchor instanceof HTMLAnchorElement)) return
       if (anchor.target && anchor.target !== "_self") return
       if (anchor.hasAttribute("download")) return
+      if (anchor.dataset.routeProgress === "false") return
+      if (anchor.dataset.nprogress === "ignore") return
 
       const nextUrl = new URL(anchor.href, window.location.href)
       if (nextUrl.origin !== window.location.origin) return

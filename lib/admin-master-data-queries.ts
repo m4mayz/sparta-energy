@@ -40,35 +40,53 @@ export type MasterStoreRow = {
   updatedAt: string
 }
 
-export type MasterEquipmentHasBrandsFilter = "with-brands" | "without-brands"
+export type EquipmentArea = "PARKING" | "TERRACE" | "SALES" | "WAREHOUSE"
+export type MasterEquipmentPowerModeFilter =
+  | "has-standby"
+  | "has-running"
+  | "missing-mode"
 export type MasterEquipmentSortKey =
-  | "name"
+  | "equipment"
+  | "brand"
   | "category"
   | "storeType"
-  | "defaultKw"
-  | "brandCount"
+  | "area"
+  | "baseKw"
+  | "standbyKw"
+  | "runningKw"
   | "createdAt"
 
 export type MasterEquipmentFilters = {
   q: string
   category: string
   storeType: string
-  hasBrands: MasterEquipmentHasBrandsFilter | "all"
+  area: EquipmentArea | "all"
+  powerMode: MasterEquipmentPowerModeFilter | "all"
   sort: MasterEquipmentSortKey
   order: SortOrder
 }
 
 export type MasterEquipmentRow = {
   id: string
+  equipmentTypeId: string
+  equipmentName: string
+  brandName: string
+  category: string
+  area: EquipmentArea
+  defaultKw: number
+  baseKw: number
+  standbyKw: number
+  runningKw: number
+  storeType: string | null
+  createdAt: string
+}
+
+export type MasterEquipmentTypeOption = {
+  id: string
   name: string
   category: string
-  defaultKw: number
   storeType: string | null
-  brandCount: number
-  minBrandKw: number | null
-  maxBrandKw: number | null
-  topBrands: string[]
-  createdAt: string
+  defaultKw: number
 }
 
 export type MasterDataSummary = {
@@ -120,12 +138,12 @@ type RawMasterStoreRow = Omit<
 
 type RawMasterEquipmentRow = Omit<
   MasterEquipmentRow,
-  "defaultKw" | "minBrandKw" | "maxBrandKw" | "topBrands" | "createdAt"
+  "defaultKw" | "baseKw" | "standbyKw" | "runningKw" | "createdAt"
 > & {
   defaultKw: { toString(): string } | string | number
-  minBrandKw: { toString(): string } | string | number | null
-  maxBrandKw: { toString(): string } | string | number | null
-  topBrands: string[] | null
+  baseKw: { toString(): string } | string | number
+  standbyKw: { toString(): string } | string | number
+  runningKw: { toString(): string } | string | number
   createdAt: Date | string
 }
 
@@ -135,7 +153,7 @@ const activeStoreWhereSql =
 export const masterStoresPageSize = 25
 export const masterEquipmentPageSize = 25
 export const defaultMasterStoreSort: MasterStoreSortKey = "store"
-export const defaultMasterEquipmentSort: MasterEquipmentSortKey = "name"
+export const defaultMasterEquipmentSort: MasterEquipmentSortKey = "equipment"
 export const defaultMasterDataOrder: SortOrder = "asc"
 
 export function parseMasterDataTab(
@@ -175,11 +193,14 @@ export function parseMasterEquipmentSort(
   value: string | null | undefined
 ): MasterEquipmentSortKey {
   if (
-    value === "name" ||
+    value === "equipment" ||
+    value === "brand" ||
     value === "category" ||
     value === "storeType" ||
-    value === "defaultKw" ||
-    value === "brandCount" ||
+    value === "area" ||
+    value === "baseKw" ||
+    value === "standbyKw" ||
+    value === "runningKw" ||
     value === "createdAt"
   ) {
     return value
@@ -188,20 +209,36 @@ export function parseMasterEquipmentSort(
   return defaultMasterEquipmentSort
 }
 
-export function parseMasterEquipmentHasBrands(
+export function parseMasterEquipmentPowerMode(
   value: string | null | undefined
-): MasterEquipmentHasBrandsFilter | "all" {
-  if (value === "with-brands" || value === "without-brands") return value
+): MasterEquipmentPowerModeFilter | "all" {
+  if (
+    value === "has-standby" ||
+    value === "has-running" ||
+    value === "missing-mode"
+  ) {
+    return value
+  }
+  return "all"
+}
+
+export function parseMasterEquipmentArea(
+  value: string | null | undefined
+): EquipmentArea | "all" {
+  if (
+    value === "PARKING" ||
+    value === "TERRACE" ||
+    value === "SALES" ||
+    value === "WAREHOUSE"
+  ) {
+    return value
+  }
+
   return "all"
 }
 
 function toNumber(value: unknown) {
   if (value === null || value === undefined) return 0
-  return Number(value)
-}
-
-function toNullableNumber(value: unknown) {
-  if (value === null || value === undefined) return null
   return Number(value)
 }
 
@@ -221,9 +258,9 @@ function serializeEquipmentRow(row: RawMasterEquipmentRow): MasterEquipmentRow {
   return {
     ...row,
     defaultKw: toNumber(row.defaultKw),
-    minBrandKw: toNullableNumber(row.minBrandKw),
-    maxBrandKw: toNullableNumber(row.maxBrandKw),
-    topBrands: row.topBrands ?? [],
+    baseKw: toNumber(row.baseKw),
+    standbyKw: toNumber(row.standbyKw),
+    runningKw: toNumber(row.runningKw),
     createdAt: new Date(row.createdAt).toISOString(),
   }
 }
@@ -291,12 +328,7 @@ function getEquipmentWhereSql(
       lower(et.name) LIKE $${index}
       OR lower(et.category) LIKE $${index}
       OR lower(coalesce(et.store_type, '')) LIKE $${index}
-      OR EXISTS (
-        SELECT 1
-        FROM equipment_brands eb_search
-        WHERE eb_search.equipment_type_id = et.id
-          AND lower(eb_search.name) LIKE $${index}
-      )
+      OR lower(eb.name) LIKE $${index}
     )`)
   }
 
@@ -310,10 +342,17 @@ function getEquipmentWhereSql(
     clauses.push(`et.store_type = $${values.length}`)
   }
 
-  if (filters.hasBrands === "with-brands") {
-    clauses.push("brand_summary.brand_count > 0")
-  } else if (filters.hasBrands === "without-brands") {
-    clauses.push("coalesce(brand_summary.brand_count, 0) = 0")
+  if (filters.area !== "all") {
+    values.push(filters.area)
+    clauses.push(`eb.area_target::text = $${values.length}`)
+  }
+
+  if (filters.powerMode === "has-standby") {
+    clauses.push("eb.standby_kw > 0")
+  } else if (filters.powerMode === "has-running") {
+    clauses.push("eb.running_kw > 0")
+  } else if (filters.powerMode === "missing-mode") {
+    clauses.push("eb.standby_kw = 0 AND eb.running_kw = 0")
   }
 
   return clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""
@@ -324,12 +363,15 @@ function getEquipmentOrderBySql(filters: MasterEquipmentFilters) {
   const nulls = filters.order === "desc" ? "NULLS LAST" : "NULLS FIRST"
 
   const sortSqlByKey: Record<MasterEquipmentSortKey, string> = {
-    name: `lower(et.name) ${direction}`,
-    category: `lower(et.category) ${direction}, lower(et.name) ASC`,
-    storeType: `lower(et.store_type) ${direction} ${nulls}, lower(et.name) ASC`,
-    defaultKw: `et.default_kw ${direction}, lower(et.name) ASC`,
-    brandCount: `brand_summary.brand_count ${direction}, lower(et.name) ASC`,
-    createdAt: `et.created_at ${direction}, lower(et.name) ASC`,
+    equipment: `lower(et.name) ${direction}, lower(eb.name) ASC`,
+    brand: `lower(eb.name) ${direction}, lower(et.name) ASC`,
+    category: `lower(et.category) ${direction}, lower(et.name) ASC, lower(eb.name) ASC`,
+    storeType: `lower(et.store_type) ${direction} ${nulls}, lower(et.name) ASC, lower(eb.name) ASC`,
+    area: `eb.area_target::text ${direction}, lower(et.name) ASC, lower(eb.name) ASC`,
+    baseKw: `eb.base_kw ${direction}, lower(et.name) ASC`,
+    standbyKw: `eb.standby_kw ${direction}, lower(et.name) ASC`,
+    runningKw: `eb.running_kw ${direction}, lower(et.name) ASC`,
+    createdAt: `eb.created_at ${direction}, lower(et.name) ASC`,
   }
 
   return `ORDER BY ${sortSqlByKey[filters.sort]}`
@@ -338,15 +380,7 @@ function getEquipmentOrderBySql(filters: MasterEquipmentFilters) {
 function getEquipmentFromSql() {
   return `
     FROM equipment_types et
-    LEFT JOIN LATERAL (
-      SELECT
-        COUNT(eb.id)::int AS brand_count,
-        MIN(eb.base_kw) AS min_brand_kw,
-        MAX(eb.base_kw) AS max_brand_kw,
-        ARRAY_AGG(eb.name ORDER BY eb.name ASC) FILTER (WHERE eb.name IS NOT NULL) AS top_brands
-      FROM equipment_brands eb
-      WHERE eb.equipment_type_id = et.id
-    ) brand_summary ON true
+    INNER JOIN equipment_brands eb ON eb.equipment_type_id = et.id
   `
 }
 
@@ -520,6 +554,29 @@ export async function getMasterEquipmentStoreTypes() {
     .filter((item): item is string => Boolean(item))
 }
 
+export async function getMasterEquipmentTypeOptions(): Promise<
+  MasterEquipmentTypeOption[]
+> {
+  const rows = await prisma.equipmentType.findMany({
+    orderBy: [{ category: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      storeType: true,
+      defaultKw: true,
+    },
+  })
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    storeType: row.storeType,
+    defaultKw: Number(row.defaultKw),
+  }))
+}
+
 export async function getMasterEquipmentCount(filters: MasterEquipmentFilters) {
   const values: unknown[] = []
   const whereSql = getEquipmentWhereSql(filters, values)
@@ -556,16 +613,18 @@ export async function getMasterEquipmentRows({
   const rows = await prisma.$queryRawUnsafe<RawMasterEquipmentRow[]>(
     `
       SELECT
-        et.id,
-        et.name,
+        eb.id,
+        et.id AS "equipmentTypeId",
+        et.name AS "equipmentName",
+        eb.name AS "brandName",
         et.category,
+        eb.area_target::text AS area,
         et.default_kw AS "defaultKw",
+        eb.base_kw AS "baseKw",
+        eb.standby_kw AS "standbyKw",
+        eb.running_kw AS "runningKw",
         et.store_type AS "storeType",
-        COALESCE(brand_summary.brand_count, 0)::int AS "brandCount",
-        brand_summary.min_brand_kw AS "minBrandKw",
-        brand_summary.max_brand_kw AS "maxBrandKw",
-        COALESCE(brand_summary.top_brands[1:4], ARRAY[]::text[]) AS "topBrands",
-        et.created_at AS "createdAt"
+        eb.created_at AS "createdAt"
       ${getEquipmentFromSql()}
       ${whereSql}
       ${orderBySql}

@@ -9,7 +9,20 @@ import {
   IconLoader2,
   IconSortAscending,
   IconSortDescending,
+  IconPencil,
+  IconTrash,
+  IconAlertTriangle,
 } from "@tabler/icons-react"
+import { toast } from "sonner"
+import { AdminMasterStoreDialog } from "@/components/admin/admin-master-store-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -101,6 +114,48 @@ export function AdminMasterStoresTable({
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const filterKey = JSON.stringify(filters)
+
+  const [editStore, setEditStore] = useState<MasterStoreRow | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteStore, setDeleteStore] = useState<MasterStoreRow | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  function handleEdit(store: MasterStoreRow) {
+    setEditStore(store)
+    setEditDialogOpen(true)
+  }
+
+  function handleDeleteClick(store: MasterStoreRow) {
+    setDeleteStore(store)
+    setDeleteDialogOpen(true)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteStore) return
+    setIsDeleting(true)
+    try {
+      const response = await fetch(
+        `/admin/master-data/stores/${deleteStore.id}`,
+        {
+          method: "DELETE",
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal menghapus toko")
+      }
+      toast.success("Berhasil menghapus toko")
+      setDeleteDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Terjadi kesalahan sistem"
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   function updateSort(column: MasterStoreSortKey) {
     const params = new URLSearchParams(searchParams)
@@ -234,6 +289,7 @@ export function AdminMasterStoresTable({
               <TableHead>
                 <SortableHeader column="updatedAt">Update</SortableHeader>
               </TableHead>
+              <TableHead className="w-24 text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -303,6 +359,29 @@ export function AdminMasterStoresTable({
                   <TableCell className="text-muted-foreground">
                     {formatDate(store.updatedAt)}
                   </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleEdit(store)}
+                        title="Ubah Toko"
+                      >
+                        <IconPencil className="size-3.5 text-primary" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleDeleteClick(store)}
+                        title="Hapus Toko"
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <IconTrash className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               )
             })}
@@ -327,6 +406,53 @@ export function AdminMasterStoresTable({
           )}
         </div>
       </div>
+
+      {/* Edit Store Dialog */}
+      <AdminMasterStoreDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        store={editStore}
+        onSuccess={() => {
+          router.refresh()
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <IconAlertTriangle className="size-6" />
+            </div>
+            <DialogTitle className="text-center mt-3">Hapus Toko</DialogTitle>
+            <DialogDescription className="text-center">
+              Apakah Anda yakin ingin menghapus toko{" "}
+              <strong className="text-foreground">{deleteStore?.code} - {deleteStore?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 grid grid-cols-2 gap-2 sm:space-x-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && (
+                <IconLoader2 className="mr-2 size-4 animate-spin" />
+              )}
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

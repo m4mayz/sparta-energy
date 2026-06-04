@@ -7,7 +7,21 @@ import {
   IconSortAscending,
   IconSortDescending,
   IconTool,
+  IconPencil,
+  IconTrash,
+  IconAlertTriangle,
 } from "@tabler/icons-react"
+import { toast } from "sonner"
+import { AdminMasterEquipmentDialog } from "@/components/admin/admin-master-equipment-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import type { MasterEquipmentTypeOption } from "@/lib/admin-master-data-queries"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,11 +74,17 @@ export function AdminMasterEquipmentTable({
   initialHasMore,
   totalRows,
   filters,
+  equipmentTypeOptions,
+  categories,
+  storeTypes,
 }: {
   initialRows: MasterEquipmentRow[]
   initialHasMore: boolean
   totalRows: number
   filters: MasterEquipmentFilters
+  equipmentTypeOptions: MasterEquipmentTypeOption[]
+  categories: string[]
+  storeTypes: string[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -74,6 +94,48 @@ export function AdminMasterEquipmentTable({
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const filterKey = JSON.stringify(filters)
+
+  const [editItem, setEditItem] = useState<MasterEquipmentRow | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteItem, setDeleteItem] = useState<MasterEquipmentRow | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  function handleEdit(item: MasterEquipmentRow) {
+    setEditItem(item)
+    setEditDialogOpen(true)
+  }
+
+  function handleDeleteClick(item: MasterEquipmentRow) {
+    setDeleteItem(item)
+    setDeleteDialogOpen(true)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteItem) return
+    setIsDeleting(true)
+    try {
+      const response = await fetch(
+        `/admin/master-data/equipment/${deleteItem.id}`,
+        {
+          method: "DELETE",
+        }
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal menghapus equipment")
+      }
+      toast.success("Berhasil menghapus brand equipment")
+      setDeleteDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Terjadi kesalahan sistem"
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   function updateSort(column: MasterEquipmentSortKey) {
     const params = new URLSearchParams(searchParams)
@@ -150,7 +212,8 @@ export function AdminMasterEquipmentTable({
         q: filters.q,
         category: filters.category,
         storeType: filters.storeType,
-        hasBrands: filters.hasBrands,
+        area: filters.area,
+        powerMode: filters.powerMode,
         sort: filters.sort,
         order: filters.order,
       })
@@ -179,7 +242,10 @@ export function AdminMasterEquipmentTable({
           <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border)]">
             <TableRow>
               <TableHead>
-                <SortableHeader column="name">Equipment</SortableHeader>
+                <SortableHeader column="equipment">Equipment</SortableHeader>
+              </TableHead>
+              <TableHead>
+                <SortableHeader column="brand">Brand</SortableHeader>
               </TableHead>
               <TableHead>
                 <SortableHeader column="category">Kategori</SortableHeader>
@@ -187,22 +253,28 @@ export function AdminMasterEquipmentTable({
               <TableHead>
                 <SortableHeader column="storeType">Tipe Toko</SortableHeader>
               </TableHead>
+              <TableHead>
+                <SortableHeader column="area">Area</SortableHeader>
+              </TableHead>
               <TableHead className="text-right">
-                <SortableHeader column="defaultKw" align="right">
+                <SortableHeader column="baseKw" align="right">
                   Default kW
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
-                <SortableHeader column="brandCount" align="right">
-                  Brand
+                <SortableHeader column="standbyKw" align="right">
+                  Standby kW
                 </SortableHeader>
               </TableHead>
-              <TableHead className="text-right">Min kW</TableHead>
-              <TableHead className="text-right">Max kW</TableHead>
-              <TableHead>Contoh Brand</TableHead>
+              <TableHead className="text-right">
+                <SortableHeader column="runningKw" align="right">
+                  Running kW
+                </SortableHeader>
+              </TableHead>
               <TableHead>
                 <SortableHeader column="createdAt">Dibuat</SortableHeader>
               </TableHead>
+              <TableHead className="w-24 text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -215,10 +287,20 @@ export function AdminMasterEquipmentTable({
                     </div>
                     <div className="min-w-0">
                       <p className="max-w-64 truncate font-medium">
-                        {item.name}
+                        {item.equipmentName}
                       </p>
-                      <p className="text-xs text-muted-foreground">{item.id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.equipmentTypeId}
+                      </p>
                     </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="min-w-0">
+                    <p className="max-w-48 truncate font-medium">
+                      {item.brandName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.id}</p>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -227,37 +309,43 @@ export function AdminMasterEquipmentTable({
                 <TableCell className="text-muted-foreground">
                   {item.storeType ?? "Semua tipe"}
                 </TableCell>
-                <TableCell className="text-right font-medium">
-                  {formatNumber(item.defaultKw)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {numberFormat.format(item.brandCount)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatNumber(item.minBrandKw)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatNumber(item.maxBrandKw)}
-                </TableCell>
                 <TableCell>
-                  {item.topBrands.length ? (
-                    <div className="flex max-w-80 flex-wrap gap-1">
-                      {item.topBrands.map((brand) => (
-                        <Badge
-                          key={`${item.id}-${brand}`}
-                          variant="outline"
-                          className="font-normal"
-                        >
-                          {brand}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
+                  <Badge variant="outline">{item.area}</Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-right font-medium">
+                  {formatNumber(item.baseKw)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatNumber(item.standbyKw)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatNumber(item.runningKw)}
+                </TableCell>
+                 <TableCell className="text-muted-foreground">
                   {formatDate(item.createdAt)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => handleEdit(item)}
+                      title="Ubah Equipment"
+                    >
+                      <IconPencil className="size-3.5 text-primary" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => handleDeleteClick(item)}
+                      title="Hapus Equipment"
+                      className="text-destructive hover:bg-destructive/10"
+                    >
+                      <IconTrash className="size-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -282,6 +370,56 @@ export function AdminMasterEquipmentTable({
           )}
         </div>
       </div>
+
+      {/* Edit Equipment Dialog */}
+      <AdminMasterEquipmentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        equipment={editItem}
+        equipmentTypeOptions={equipmentTypeOptions}
+        categories={categories}
+        storeTypes={storeTypes}
+        onSuccess={() => {
+          router.refresh()
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <IconAlertTriangle className="size-6" />
+            </div>
+            <DialogTitle className="text-center mt-3">Hapus Equipment</DialogTitle>
+            <DialogDescription className="text-center">
+              Apakah Anda yakin ingin menghapus brand equipment{" "}
+              <strong className="text-foreground">{deleteItem?.brandName}</strong>? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 grid grid-cols-2 gap-2 sm:space-x-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && (
+                <IconLoader2 className="mr-2 size-4 animate-spin" />
+              )}
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

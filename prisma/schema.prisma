@@ -98,6 +98,9 @@ model EquipmentBrand {
   equipmentTypeId String        @map("equipment_type_id") @db.Uuid
   name            String
   baseKw          Decimal       @map("base_kw") // Diisi dengan defaultKw dari EquipmentType saat dibuat
+  standbyKw       Decimal       @default(0) @map("standby_kw")
+  runningKw       Decimal       @default(0) @map("running_kw")
+  areaTarget      AreaTarget    @default(SALES) @map("area_target")
   createdAt       DateTime      @default(now()) @map("created_at")
   
   type            EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Cascade)

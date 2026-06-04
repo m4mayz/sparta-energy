@@ -4,7 +4,8 @@ import { requireAdmin } from "@/lib/admin-auth"
 import {
   getMasterEquipmentRows,
   masterEquipmentPageSize,
-  parseMasterEquipmentHasBrands,
+  parseMasterEquipmentArea,
+  parseMasterEquipmentPowerMode,
   parseMasterEquipmentSort,
   parseSortOrder,
 } from "@/lib/admin-master-data-queries"
@@ -22,7 +23,10 @@ export async function GET(request: Request) {
     q: url.searchParams.get("q")?.trim() ?? "",
     category: getFilter(url.searchParams, "category"),
     storeType: getFilter(url.searchParams, "storeType"),
-    hasBrands: parseMasterEquipmentHasBrands(url.searchParams.get("hasBrands")),
+    area: parseMasterEquipmentArea(url.searchParams.get("area")),
+    powerMode: parseMasterEquipmentPowerMode(
+      url.searchParams.get("powerMode")
+    ),
     sort: parseMasterEquipmentSort(url.searchParams.get("sort")),
     order: parseSortOrder(url.searchParams.get("order")),
   }

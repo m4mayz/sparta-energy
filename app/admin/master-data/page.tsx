@@ -18,6 +18,7 @@ import {
   getMasterEquipmentCount,
   getMasterEquipmentRows,
   getMasterEquipmentStoreTypes,
+  getMasterEquipmentTypeOptions,
   getMasterStoreBranches,
   getMasterStoreCount,
   getMasterStoreRows,
@@ -25,7 +26,8 @@ import {
   masterEquipmentPageSize,
   masterStoresPageSize,
   parseMasterDataTab,
-  parseMasterEquipmentHasBrands,
+  parseMasterEquipmentArea,
+  parseMasterEquipmentPowerMode,
   parseMasterEquipmentSort,
   parseMasterStoreHours,
   parseMasterStoreSort,
@@ -42,7 +44,8 @@ type SearchParams = Promise<{
   hours?: string
   category?: string
   storeType?: string
-  hasBrands?: string
+  area?: string
+  powerMode?: string
   sort?: string
   order?: string
 }>
@@ -78,17 +81,24 @@ export default async function AdminMasterDataPage({
     q: params.q?.trim() ?? "",
     category: getFilter(params.category),
     storeType: getFilter(params.storeType),
-    hasBrands: parseMasterEquipmentHasBrands(params.hasBrands),
+    area: parseMasterEquipmentArea(params.area),
+    powerMode: parseMasterEquipmentPowerMode(params.powerMode),
     sort: parseMasterEquipmentSort(params.sort),
     order: parseSortOrder(params.order),
   }
 
-  const [storeBranches, storeTypes, equipmentCategories, equipmentStoreTypes] =
-    await Promise.all([
+  const [
+    storeBranches,
+    storeTypes,
+    equipmentCategories,
+    equipmentStoreTypes,
+    equipmentTypeOptions,
+  ] = await Promise.all([
       getMasterStoreBranches(),
       getMasterStoreTypes(),
       getMasterEquipmentCategories(),
       getMasterEquipmentStoreTypes(),
+      getMasterEquipmentTypeOptions(),
     ])
 
   const storeData =
@@ -222,6 +232,7 @@ export default async function AdminMasterDataPage({
                 <AdminMasterEquipmentFilters
                   categories={equipmentCategories}
                   storeTypes={equipmentStoreTypes}
+                  equipmentTypeOptions={equipmentTypeOptions}
                 />
               </div>
               <div className="flex min-h-0 flex-1 flex-col px-3 md:px-4">
@@ -235,6 +246,9 @@ export default async function AdminMasterDataPage({
                     initialHasMore={equipmentData[1].hasMore}
                     totalRows={equipmentData[0]}
                     filters={equipmentFilters}
+                    equipmentTypeOptions={equipmentTypeOptions}
+                    categories={equipmentCategories}
+                    storeTypes={equipmentStoreTypes}
                   />
                 </div>
               </div>

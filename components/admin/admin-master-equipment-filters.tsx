@@ -9,7 +9,10 @@ import {
   IconTag,
   IconTool,
   IconVersions,
+  IconPlus,
 } from "@tabler/icons-react"
+import { AdminMasterEquipmentDialog } from "@/components/admin/admin-master-equipment-dialog"
+import type { MasterEquipmentTypeOption } from "@/lib/admin-master-data-queries"
 
 import {
   createFilter,
@@ -23,6 +26,7 @@ import { Input } from "@/components/ui/input"
 type AdminMasterEquipmentFiltersProps = {
   categories: string[]
   storeTypes: string[]
+  equipmentTypeOptions: MasterEquipmentTypeOption[]
 }
 
 const filterParamKeys = ["category", "storeType", "hasBrands"] as const
@@ -35,6 +39,7 @@ function getParam(searchParams: URLSearchParams, key: string) {
 export function AdminMasterEquipmentFilters({
   categories,
   storeTypes,
+  equipmentTypeOptions,
 }: AdminMasterEquipmentFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -45,6 +50,7 @@ export function AdminMasterEquipmentFilters({
     [searchParamKey]
   )
   const [query, setQuery] = useState(queryFromParams)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
     setQuery(queryFromParams)
@@ -139,64 +145,86 @@ export function AdminMasterEquipmentFilters({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center">
-      <form
-        className="flex min-w-0 shrink-0 items-center gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          applySearch()
-        }}
-      >
-        <div className="relative w-full sm:w-[22rem]">
-          <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari equipment, kategori, atau brand..."
-            className="pl-9"
-          />
-        </div>
-        <Button type="submit" variant="secondary">
-          Cari
-        </Button>
-      </form>
-
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Filters
-          filters={activeFilters}
-          fields={fields}
-          onChange={applyFilterChanges}
-          allowMultiple={false}
-          idPrefix="admin-master-equipment-filters"
-          size="default"
-          className="min-w-0 flex-1"
-          trigger={
-            <Button
-              id="admin-master-equipment-filter-trigger"
-              type="button"
-              variant="outline"
-            >
-              <IconFilter data-icon="inline-start" />
-              Filter
-            </Button>
-          }
-          i18n={{
-            addFilter: "Tambah filter",
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between w-full">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 xl:flex-row xl:items-center">
+        <form
+          className="flex min-w-0 shrink-0 items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            applySearch()
           }}
-        />
-
-        {hasFilters && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="shrink-0"
-            onClick={clearFilters}
-          >
-            <IconFilterOff data-icon="inline-start" />
-            Reset
+        >
+          <div className="relative w-full sm:w-[22rem]">
+            <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Cari equipment, kategori, atau brand..."
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit" variant="secondary">
+            Cari
           </Button>
-        )}
+        </form>
+
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Filters
+            filters={activeFilters}
+            fields={fields}
+            onChange={applyFilterChanges}
+            allowMultiple={false}
+            idPrefix="admin-master-equipment-filters"
+            size="default"
+            className="min-w-0 flex-1"
+            trigger={
+              <Button
+                id="admin-master-equipment-filter-trigger"
+                type="button"
+                variant="outline"
+              >
+                <IconFilter data-icon="inline-start" />
+                Filter
+              </Button>
+            }
+            i18n={{
+              addFilter: "Tambah filter",
+            }}
+          />
+
+          {hasFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="shrink-0"
+              onClick={clearFilters}
+            >
+              <IconFilterOff data-icon="inline-start" />
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
+
+      <div className="shrink-0">
+        <Button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="w-full lg:w-auto"
+        >
+          <IconPlus data-icon="inline-start" className="size-4" />
+          Tambah Equipment
+        </Button>
+      </div>
+
+      <AdminMasterEquipmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        equipmentTypeOptions={equipmentTypeOptions}
+        categories={categories}
+        storeTypes={storeTypes}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   )
 }

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     powerMode: parseMasterEquipmentPowerMode(
       url.searchParams.get("powerMode")
     ),
-    hasBrands: (hasBrandsRaw === "with-brands" || hasBrandsRaw === "without-brands") ? hasBrandsRaw : "all" as const,
+    hasBrands: (hasBrandsRaw === "with-brands" ? "with-brands" : hasBrandsRaw === "without-brands" ? "without-brands" : "all") as "with-brands" | "without-brands" | "all",
     sort: parseMasterEquipmentSort(url.searchParams.get("sort")),
     order: parseSortOrder(url.searchParams.get("order")),
   }

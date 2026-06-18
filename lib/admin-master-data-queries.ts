@@ -96,12 +96,19 @@ export type MasterEquipmentTypeOption = {
 export type MasterDataSummary = {
   totalStores: number
   branches: number
-  storeTypes: number
+  regularStores: number
+  beanspotStores: number
+  otherStores: number
+  auditedStores: number
+  draftAuditedStores: number
+  notAuditedStores: number
+  auditPercent: number
   totalPlnPowerVa: number
   stores24h: number
   storesNon24h: number
   avgStoreArea: number
   totalEquipmentTypes: number
+  beanspotEquipmentTypes: number
   totalBrands: number
   categories: number
   avgDefaultKw: number
@@ -156,7 +163,7 @@ type RawMasterEquipmentRow = Omit<
 }
 
 const activeStoreWhereSql =
-  "s.branch IS NULL OR lower(s.branch) NOT IN ('demo', 'head office')"
+  "(s.branch IS NULL OR lower(s.branch) NOT IN ('demo', 'head office'))"
 
 export const masterStoresPageSize = 25
 export const masterEquipmentPageSize = 25
@@ -444,10 +451,36 @@ export async function getMasterDataSummary(): Promise<MasterDataSummary> {
         WHERE s.branch IS NOT NULL AND ${activeStoreWhereSql}
       ) AS branches,
       (
-        SELECT COUNT(DISTINCT s.type)::int
+        SELECT COUNT(*)::int
         FROM stores s
-        WHERE s.type IS NOT NULL AND ${activeStoreWhereSql}
-      ) AS store_types,
+        WHERE lower(trim(coalesce(s.type, ''))) IN ('beanspot', 'basic', 'medium', 'advance') AND ${activeStoreWhereSql}
+      ) AS beanspot_stores,
+      (
+        SELECT COUNT(*)::int
+        FROM stores s
+        WHERE (s.type IS NULL OR lower(trim(coalesce(s.type, ''))) IN ('', 'regular', 'reguler')) AND ${activeStoreWhereSql}
+      ) AS regular_stores,
+      (
+        SELECT COUNT(*)::int
+        FROM stores s
+        WHERE s.type IS NOT NULL AND lower(trim(s.type)) NOT IN ('', 'regular', 'reguler', 'beanspot', 'basic', 'medium', 'advance') AND ${activeStoreWhereSql}
+      ) AS other_stores,
+      (
+        SELECT COUNT(DISTINCT a.store_id)::int
+        FROM audits a
+        INNER JOIN stores s ON s.id = a.store_id
+        WHERE a.status = 'COMPLETED' AND (${activeStoreWhereSql})
+      ) AS audited_stores,
+      (
+        SELECT COUNT(DISTINCT a.store_id)::int
+        FROM audits a
+        INNER JOIN stores s ON s.id = a.store_id
+        WHERE a.status = 'DRAFT' 
+          AND a.store_id NOT IN (
+            SELECT store_id FROM audits WHERE status = 'COMPLETED'
+          )
+          AND (${activeStoreWhereSql})
+      ) AS draft_audited_stores,
       (
         SELECT COALESCE(SUM(s.pln_power_va), 0)::int
         FROM stores s
@@ -469,6 +502,11 @@ export async function getMasterDataSummary(): Promise<MasterDataSummary> {
         WHERE ${activeStoreWhereSql}
       ) AS avg_store_area,
       (SELECT COUNT(*)::int FROM equipment_types) AS total_equipment_types,
+      (
+        SELECT COUNT(*)::int
+        FROM equipment_types et
+        WHERE lower(trim(et.store_type)) = 'beanspot'
+      ) AS beanspot_equipment_types,
       (SELECT COUNT(*)::int FROM equipment_brands) AS total_brands,
       (
         SELECT COUNT(DISTINCT et.device_category)::int
@@ -489,18 +527,30 @@ export async function getMasterDataSummary(): Promise<MasterDataSummary> {
     WHERE et.device_category IS NOT NULL AND trim(et.device_category) <> ''
     GROUP BY et.device_category
     ORDER BY count DESC, name ASC
-    LIMIT 3
   `)
 
+  const totalStores = Number(row?.total_stores ?? 0)
+  const auditedStores = Number(row?.audited_stores ?? 0)
+  const draftAuditedStores = Number(row?.draft_audited_stores ?? 0)
+  const notAuditedStores = Math.max(0, totalStores - auditedStores - draftAuditedStores)
+  const auditPercent = totalStores > 0 ? Math.round((auditedStores / totalStores) * 100) : 0
+
   return {
-    totalStores: Number(row?.total_stores ?? 0),
+    totalStores,
     branches: Number(row?.branches ?? 0),
-    storeTypes: Number(row?.store_types ?? 0),
+    regularStores: Number(row?.regular_stores ?? 0),
+    beanspotStores: Number(row?.beanspot_stores ?? 0),
+    otherStores: Number(row?.other_stores ?? 0),
+    auditedStores,
+    draftAuditedStores,
+    notAuditedStores,
+    auditPercent,
     totalPlnPowerVa: Number(row?.total_pln_power_va ?? 0),
     stores24h: Number(row?.stores_24h ?? 0),
     storesNon24h: Number(row?.stores_non_24h ?? 0),
     avgStoreArea: toNumber(row?.avg_store_area),
     totalEquipmentTypes: Number(row?.total_equipment_types ?? 0),
+    beanspotEquipmentTypes: Number(row?.beanspot_equipment_types ?? 0),
     totalBrands: Number(row?.total_brands ?? 0),
     categories: Number(row?.categories ?? 0),
     avgDefaultKw: toNumber(row?.avg_default_kw),

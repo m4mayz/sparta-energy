@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { IconLoader2 } from "@tabler/icons-react"
+import { IconLoader2, IconPhoto, IconUpload } from "@tabler/icons-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -99,7 +99,7 @@ export function AdminMasterEquipmentDialog({
       setEquipmentTypeId(equipment.equipmentTypeId)
       setEquipmentName(equipment.equipmentName)
       setCategory(equipment.category)
-      
+
       const devCat = equipment.deviceCategory || ""
       setDeviceCategory(devCat)
       if (uniqueDeviceCategories.includes(devCat)) {
@@ -109,7 +109,7 @@ export function AdminMasterEquipmentDialog({
         setSelectDeviceCategory(devCat ? "custom_input" : "")
         setCustomDeviceCategory(devCat)
       }
-      
+
       setStoreType(equipment.storeType || "all")
       setDefaultKw(equipment.defaultKw)
 
@@ -165,7 +165,7 @@ export function AdminMasterEquipmentDialog({
       if (selectedType) {
         setEquipmentName(selectedType.name)
         setCategory(selectedType.category)
-        
+
         const devCat = selectedType.deviceCategory || ""
         setDeviceCategory(devCat)
         if (uniqueDeviceCategories.includes(devCat)) {
@@ -175,7 +175,7 @@ export function AdminMasterEquipmentDialog({
           setSelectDeviceCategory(devCat ? "custom_input" : "")
           setCustomDeviceCategory(devCat)
         }
-        
+
         setStoreType(selectedType.storeType || "all")
         setDefaultKw(selectedType.defaultKw)
         // Auto-fill baseKw with defaultKw of type for convenience
@@ -588,6 +588,39 @@ export function AdminMasterEquipmentDialog({
                     }
                     disabled={isSubmitting}
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* ── SECTION 3: Documentation (Mock / Inactive) ── */}
+            <div className="border-t pt-3 space-y-3 opacity-60">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                <span>Dokumentasi & Referensi</span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground uppercase select-none">
+                  Segera Hadir
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Fitur integrasi Google Drive perusahaan untuk dokumentasi foto brand dan name plate.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-[11px] font-medium">Foto Produk</Label>
+                  <div className="flex flex-col items-center justify-center border border-dashed border-muted-foreground/30 rounded-lg p-3 bg-muted/10 cursor-not-allowed select-none min-h-[5.5rem]">
+                    <IconPhoto className="size-5 text-muted-foreground/50 mb-1" />
+                    <span className="text-[10px] font-semibold text-muted-foreground text-center">Pilih atau Seret Foto</span>
+                    <span className="text-[9px] text-muted-foreground/60 mt-0.5">Maks. 5MB (Nonaktif)</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-[11px] font-medium">Foto Name Plate</Label>
+                  <div className="flex flex-col items-center justify-center border border-dashed border-muted-foreground/30 rounded-lg p-3 bg-muted/10 cursor-not-allowed select-none min-h-[5.5rem]">
+                    <IconUpload className="size-5 text-muted-foreground/50 mb-1" />
+                    <span className="text-[10px] font-semibold text-muted-foreground text-center">Pilih atau Seret Foto</span>
+                    <span className="text-[9px] text-muted-foreground/60 mt-0.5">Maks. 5MB (Nonaktif)</span>
+                  </div>
                 </div>
               </div>
             </div>

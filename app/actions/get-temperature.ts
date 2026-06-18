@@ -49,7 +49,7 @@ export async function getTemperature(lat: string, lng: string) {
     // - indeks 0  = data terbesar ke-1 (suhu tertinggi absolut)
     // - indeks 87 = data terbesar ke-88 (sesuai permintaan saat ini)
     // Silakan ubah angka di bawah ini untuk mengambil urutan terbesar lainnya:
-    const RANK_INDEX = 87
+    const RANK_INDEX = 174
 
     const maxTemp = suhuTerurut[RANK_INDEX] !== undefined ? suhuTerurut[RANK_INDEX] : suhuTerurut[0]
 

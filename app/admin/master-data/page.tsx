@@ -5,6 +5,7 @@ import {
   IconTool,
   IconClock,
   IconCategory,
+  IconClipboardCheck,
 } from "@tabler/icons-react"
 
 import { AdminMasterDataNav } from "@/components/admin/admin-master-data-nav"
@@ -13,6 +14,7 @@ import { AdminMasterEquipmentTable } from "@/components/admin/admin-master-equip
 import { AdminMasterStoreFilters } from "@/components/admin/admin-master-store-filters"
 import { AdminMasterStoresTable } from "@/components/admin/admin-master-stores-table"
 import { AdminMetricCard } from "@/components/admin/admin-metric-card"
+import { AdminMasterCategoriesList } from "@/components/admin/admin-master-categories-list"
 import {
   getMasterDataSummary,
   getMasterEquipmentCategories,
@@ -140,47 +142,51 @@ export default async function AdminMasterDataPage({
             <AdminMetricCard
               label="Master Toko"
               value={formatNumber(summary.totalStores)}
+              description={`${formatNumber(summary.branches)} Cabang Terdaftar`}
               icon={IconBuildingStore}
               tone="info"
               valueClassName="text-xl"
               rows={[
-                { label: "Cabang", value: formatNumber(summary.branches) },
-                { label: "Tipe toko", value: formatNumber(summary.storeTypes) },
+                { label: "Toko Reguler", value: formatNumber(summary.regularStores) },
+                { label: "Toko Beanspot", value: formatNumber(summary.beanspotStores) },
+                { label: "Format Lainnya", value: formatNumber(summary.otherStores) },
               ]}
             />
             <AdminMetricCard
-              label="Operasional Toko"
-              value={formatNumber(summary.stores24h, " Toko 24h")}
-              icon={IconClock}
+              label="Status Audit Toko"
+              value={`${summary.auditPercent}%`}
+              description="Toko aktif teraudit"
+              icon={IconClipboardCheck}
               tone="default"
               valueClassName="text-xl"
               rows={[
-                { label: "Toko non-24h", value: formatNumber(summary.storesNon24h) },
-                { label: "Rerata luas", value: formatNumber(summary.avgStoreArea, " m²") },
+                { label: "Audit Selesai", value: formatNumber(summary.auditedStores, " Toko") },
+                { label: "Audit Draf", value: formatNumber(summary.draftAuditedStores, " Toko") },
+                { label: "Belum Diaudit", value: formatNumber(summary.notAuditedStores, " Toko") },
               ]}
             />
             <AdminMetricCard
               label="Master Equipment"
-              value={formatNumber(summary.totalEquipmentTypes)}
+              value={formatNumber(summary.totalBrands, " Merek")}
+              description="Merek terdaftar"
               icon={IconTool}
               tone="success"
               valueClassName="text-xl"
               rows={[
-                { label: "Area penempatan", value: formatNumber(summary.categories) },
-                { label: "Brand terdaftar", value: formatNumber(summary.totalBrands) },
+                { label: "Tipe Equipment", value: formatNumber(summary.totalEquipmentTypes) },
+                { label: "Kategori Equipment", value: formatNumber(summary.categories) },
               ]}
             />
             <AdminMetricCard
-              label="Top Kategori Jenis"
-              value={formatNumber(summary.topCategories.length ? summary.topCategories[0].count : 0, ` Brand ${summary.topCategories.length ? summary.topCategories[0].name : "-"}`)}
+              label="Kategori Equipment"
+              value={formatNumber(summary.topCategories.length, " Kategori")}
+              description="Kategori utama"
               icon={IconCategory}
               tone="default"
               valueClassName="text-xl"
-              rows={summary.topCategories.slice(1).map((cat) => ({
-                label: cat.name,
-                value: formatNumber(cat.count, " Brand"),
-              }))}
-            />
+            >
+              <AdminMasterCategoriesList categories={summary.topCategories} />
+            </AdminMetricCard>
           </div>
 
           <div className="flex flex-col gap-3 border-y bg-background/75 px-4 py-4 md:px-6 lg:flex-row lg:items-center lg:justify-between">

@@ -12,7 +12,8 @@ import {
 import { Header } from "@/components/header"
 import { AcEstimationCard } from "@/components/dashboard/ac-estimation-card"
 import { AcEstimationUnavailableNotice } from "@/components/dashboard/ac-estimation-unavailable-notice"
-import { hasFullBranchAccess } from "@/lib/permissions"
+import { DraftListSection } from "@/components/dashboard/draft-list-section"
+
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -21,11 +22,37 @@ export default async function DashboardPage() {
   // Get all audits for stores in user's branch
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true, branch: true, fullName: true, role: true },
+    select: { branch: true, fullName: true, role: true },
   })
 
   if (!dbUser) redirect("/forbidden")
-  const canAccessAll = hasFullBranchAccess(dbUser)
+  const isAdmin = dbUser.role === "ADMIN"
+
+  // Fetch draft audits for this user
+  const draftAudits = await prisma.audit.findMany({
+    where: {
+      status: "DRAFT",
+      auditorId: session.user.id,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      updatedAt: true,
+      store: {
+        select: {
+          name: true,
+          code: true,
+        },
+      },
+    },
+  })
+
+  const drafts = draftAudits.map((d) => ({
+    id: d.id,
+    storeName: d.store.name,
+    storeCode: d.store.code,
+    updatedAt: d.updatedAt,
+  }))
 
   // Fetch 5 most recent COMPLETED audits for this user
   const branches =
@@ -33,17 +60,16 @@ export default async function DashboardPage() {
       ?.split(",")
       .map((b) => b.trim())
       .filter(Boolean) ?? []
-  const headerSubtitle = canAccessAll
-    ? (dbUser.role === "ADMIN" ? undefined : "Auditor")
+  const headerSubtitle = isAdmin
+    ? undefined
     : branches.length > 2
       ? undefined
       : (dbUser.branch ?? "")
-
   const recentAudits = await prisma.audit.findMany({
     where: {
       status: "COMPLETED",
       auditorId: session.user.id,
-      ...(canAccessAll
+      ...(isAdmin
         ? {}
         : {
             store: {
@@ -117,6 +143,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-5 flex flex-col gap-5">
+        <DraftListSection drafts={drafts} />
         <RecentAuditSection items={auditItems} />
       </section>
 

@@ -39,8 +39,9 @@ type AuditStep2Props = {
     id: string
     name: string
     category: string
+    deviceCategory: string
     defaultKw: number
-    brands: Array<{ id: string; name: string; baseKw: number }>
+    brands: Array<{ id: string; name: string; baseKw: number; productPhotoUrl?: string | null }>
   }>
 }
 

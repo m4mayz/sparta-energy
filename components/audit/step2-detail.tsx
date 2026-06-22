@@ -12,7 +12,21 @@ import {
   IconPlus,
   IconSearch,
   IconTrash,
+  IconBulb,
+  IconSnowflake,
+  IconFridge,
+  IconCpu,
 } from "@tabler/icons-react"
+
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  Pencahayaan: IconBulb,
+  "Sistem HVAC": IconSnowflake,
+  "Sistem Pendingin Produk": IconFridge,
+  Lainnya: IconCpu,
+}
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -63,8 +77,9 @@ type Step2DetailProps = {
     id: string
     name: string
     category: string
+    deviceCategory: string
     defaultKw: number
-    brands: Array<{ id: string; name: string; baseKw: number }>
+    brands: Array<{ id: string; name: string; baseKw: number; productPhotoUrl?: string | null }>
   }>
 }
 
@@ -106,11 +121,19 @@ function getAverageDailyRuntime(item: EquipmentItem) {
 
 type EquipmentRowProps = {
   item: EquipmentItem
+  photoToDisplay?: string | null
+  fallbackIcon: React.ComponentType<{ className?: string }>
   onConfigure: () => void
   onDelete: () => void
 }
 
-function EquipmentRow({ item, onConfigure, onDelete }: EquipmentRowProps) {
+function EquipmentRow({
+  item,
+  photoToDisplay,
+  fallbackIcon: FallbackIcon,
+  onConfigure,
+  onDelete,
+}: EquipmentRowProps) {
   const isSelected = Boolean(item.selected)
 
   return (
@@ -125,11 +148,24 @@ function EquipmentRow({ item, onConfigure, onDelete }: EquipmentRowProps) {
             : "border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border/40"
         )}
       >
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center shrink-0">
           {isSelected ? (
             <IconCheck className="size-6 text-primary" />
           ) : (
             <IconCircle className="size-6 text-muted-foreground/50" />
+          )}
+        </div>
+
+        {/* Thumbnail Preview */}
+        <div className="size-10 shrink-0 rounded-xl border border-border bg-muted/40 flex items-center justify-center overflow-hidden">
+          {photoToDisplay ? (
+            <img
+              src={photoToDisplay}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <FallbackIcon className="size-5 text-primary/70" />
           )}
         </div>
 
@@ -570,18 +606,36 @@ export function AuditStep2Detail({
                           <div className="h-px flex-1 bg-border" />
                         </div>
                       )}
-                      <EquipmentRow
-                        item={item}
-                        onConfigure={() => handleConfigure(item)}
-                        onDelete={() =>
-                          setItems((prev) =>
-                            prev.filter(
-                              (eq) =>
-                                (eq.uid ?? eq.name) !== (item.uid ?? item.name)
-                            )
-                          )
-                        }
-                      />
+                      {(() => {
+                        const activeMaster = masterItems.find((m) => m.name === item.name)
+                        const currentBrandName = item.brandName || ""
+                        const matchedBrand = activeMaster?.brands?.find(
+                          (b) => b.name.toLowerCase() === currentBrandName.toLowerCase().trim()
+                        )
+                        const defaultBrandPhotoUrl = activeMaster?.brands?.find(
+                          (b) => b.productPhotoUrl
+                        )?.productPhotoUrl
+                        const photoToDisplay = matchedBrand?.productPhotoUrl || defaultBrandPhotoUrl
+                        const deviceCategory = activeMaster?.deviceCategory || "Lainnya"
+                        const FallbackIcon = CATEGORY_ICONS[deviceCategory] || IconCpu
+
+                        return (
+                          <EquipmentRow
+                            item={item}
+                            photoToDisplay={photoToDisplay}
+                            fallbackIcon={FallbackIcon}
+                            onConfigure={() => handleConfigure(item)}
+                            onDelete={() =>
+                              setItems((prev) =>
+                                prev.filter(
+                                  (eq) =>
+                                    (eq.uid ?? eq.name) !== (item.uid ?? item.name)
+                                )
+                              )
+                            }
+                          />
+                        )
+                      })()}
                     </React.Fragment>
                   )
                 })
@@ -773,23 +827,54 @@ export function AuditStep2Detail({
                         : "Waktu Operasional"}
                     </label>
 
-                    {/* Merek / Brand input per unit */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">
-                        Merek / Brand (Opsional)
-                      </Label>
-                      <BrandCombobox
-                        brands={activeMaster?.brands || []}
-                        value={brandNames[idx] || ""}
-                        onChange={(val) =>
-                          setBrandNames((prev) => {
-                            const next = [...prev]
-                            next[idx] = val
-                            return next
-                          })
-                        }
-                      />
-                    </div>
+                    {/* Merek / Brand input per unit dengan Thumbnail Preview */}
+                    {(() => {
+                      const currentBrandName = brandNames[idx] || ""
+                      const matchedBrand = activeMaster?.brands?.find(
+                        (b) => b.name.toLowerCase() === currentBrandName.toLowerCase().trim()
+                      )
+                      const defaultBrandPhotoUrl = activeMaster?.brands?.find(
+                        (b) => b.productPhotoUrl
+                      )?.productPhotoUrl
+                      const photoToDisplay = matchedBrand?.productPhotoUrl || defaultBrandPhotoUrl
+                      const deviceCategory = activeMaster?.deviceCategory || "Lainnya"
+                      const FallbackIcon = CATEGORY_ICONS[deviceCategory] || IconCpu
+
+                      return (
+                        <div className="flex gap-4 items-start">
+                          {/* Visual Thumbnail */}
+                          <div className="size-16 shrink-0 rounded-2xl border border-border bg-muted/40 flex items-center justify-center overflow-hidden">
+                            {photoToDisplay ? (
+                              <img
+                                src={photoToDisplay}
+                                alt={currentBrandName || activeEquipment.name}
+                                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                              />
+                            ) : (
+                              <FallbackIcon className="size-7 text-primary/70" />
+                            )}
+                          </div>
+
+                          {/* Brand Selector */}
+                          <div className="flex-1 space-y-1.5">
+                            <Label className="text-xs">
+                              Merek / Brand (Opsional)
+                            </Label>
+                            <BrandCombobox
+                              brands={activeMaster?.brands || []}
+                              value={brandNames[idx] || ""}
+                              onChange={(val) =>
+                                setBrandNames((prev) => {
+                                  const next = [...prev]
+                                  next[idx] = val
+                                  return next
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Switch 24 jam — per unit */}
                     <div className="flex items-center justify-between rounded-xl border border-input bg-background px-3 py-2">

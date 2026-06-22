@@ -4,12 +4,14 @@ export type EquipmentBrandItem = {
   id: string
   name: string
   baseKw: number
+  productPhotoUrl?: string | null
 }
 
 export type EquipmentMasterItem = {
   id: string
   name: string
   category: string
+  deviceCategory: string
   defaultKw: number
   brands: EquipmentBrandItem[]
 }
@@ -28,11 +30,13 @@ export async function getAllEquipmentMaster(): Promise<EquipmentMasterItem[]> {
     id: row.id,
     name: row.name,
     category: row.category,
+    deviceCategory: row.deviceCategory,
     defaultKw: Number(row.defaultKw),
     brands: row.brands.map((b) => ({
       id: b.id,
       name: b.name,
       baseKw: Number(b.baseKw),
+      productPhotoUrl: b.productPhotoUrl,
     })),
   }))
 }

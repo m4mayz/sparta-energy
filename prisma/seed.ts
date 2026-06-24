@@ -22,46 +22,73 @@ const prisma = new PrismaClient({ adapter })
 // ─── Equipment Master Data ───────────────────────────────────────────────────
 const equipmentData = [
   // PARKIRAN
-  { name: "Shop Sign TL LED", category: "PARKIRAN", defaultKw: "0.084", storeType: null, brands: [] },
-  { name: "Listplank TL LED", category: "PARKIRAN", defaultKw: "0.0154", storeType: null, brands: [] },
-  { name: "Lampu Sorot LED 50 W", category: "PARKIRAN", defaultKw: "0.05", storeType: null, brands: [] },
-  { name: "Polesign", category: "PARKIRAN", defaultKw: "0.35", storeType: null, brands: [] },
+  { name: "Shop Sign TL LED", category: "PARKIRAN", deviceCategory: "Pencahayaan", defaultKw: "0.084", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Listplank TL LED", category: "PARKIRAN", deviceCategory: "Pencahayaan", defaultKw: "0.0154", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Lampu Sorot LED 50 W", category: "PARKIRAN", deviceCategory: "Pencahayaan", defaultKw: "0.05", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Polesign", category: "PARKIRAN", deviceCategory: "Pencahayaan", defaultKw: "0.35", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
 
   // TERAS
-  { name: "Lampu area Teras TL", category: "TERAS", defaultKw: "0.0154", storeType: null, brands: [] },
-  { name: "Pompa Air", category: "TERAS", defaultKw: "0.032", storeType: null, brands: ["Shimizu PC-375 BIT"] },
+  { name: "Lampu area Teras TL", category: "TERAS", deviceCategory: "Pencahayaan", defaultKw: "0.0154", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Pompa Air", category: "TERAS", deviceCategory: "Lainnya", defaultKw: "0.032", storeType: null, brands: ["Shimizu PC-375 BIT"], calcMethod: "STANDARD", calcDuration: null },
 
   // SALES
-  { name: "Paket Kasir", category: "SALES", defaultKw: "0.05", storeType: null, brands: [] },
-  { name: "Air Conditioner", category: "SALES", defaultKw: "1.07125", storeType: null, brands: ["Daikin", "Panasonic", "Sharp"] },
-  { name: "Lampu area sales TL", category: "SALES", defaultKw: "0.0154", storeType: null, brands: [] },
-  { name: "Display Cooler (Chiller)", category: "SALES", defaultKw: "0.494", storeType: null, brands: [] },
-  { name: "Freezer Chest Showcase", category: "SALES", defaultKw: "0.309", storeType: null, brands: ["Walls Hiron", "So Good"] },
-  { name: "Freezer", category: "SALES", defaultKw: "0.133", storeType: null, brands: ["Campina", "GEA Benfarm", "Belfoods Sanwoo"] },
-  { name: "Freezer Standing", category: "SALES", defaultKw: "0.348", storeType: null, brands: ["Aice"] },
-  { name: "Mesin ATM", category: "SALES", defaultKw: "0.347", storeType: null, brands: [] },
-  { name: "Exhaust Fan Ceiling 10 inch (Chiller)", category: "SALES", defaultKw: "0.026", storeType: null, brands: [] },
+  { name: "Paket Kasir", category: "SALES", deviceCategory: "Lainnya", defaultKw: "0.05", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Air Conditioner", category: "SALES", deviceCategory: "Sistem HVAC", defaultKw: "1.07125", storeType: null, brands: ["Daikin", "Panasonic", "Sharp"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Lampu area sales TL", category: "SALES", deviceCategory: "Pencahayaan", defaultKw: "0.0154", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Display Cooler (Chiller)", category: "SALES", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.494", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Freezer Chest Showcase", category: "SALES", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.309", storeType: null, brands: ["Walls Hiron", "So Good"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Freezer", category: "SALES", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.133", storeType: null, brands: ["Campina", "GEA Benfarm", "Belfoods Sanwoo"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Freezer Standing", category: "SALES", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.348", storeType: null, brands: ["Aice"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Mesin ATM", category: "SALES", deviceCategory: "Lainnya", defaultKw: "0.347", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Exhaust Fan Ceiling 10 inch (Chiller)", category: "SALES", deviceCategory: "Lainnya", defaultKw: "0.026", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
 
   // GUDANG, TOILET & SELASAR
-  { name: "Exhaust Fan Ceiling 10 inch", category: "GUDANG", defaultKw: "0.026", storeType: null, brands: [] },
-  { name: "Lampu Bohlam 9 Watt (Sensor)", category: "GUDANG", defaultKw: "0.009", storeType: null, brands: ["Hannochs"] },
-  { name: "Bell Toko", category: "GUDANG", defaultKw: "0.0095", storeType: null, brands: [] },
-  { name: "Lampu TL Waterproof", category: "GUDANG", defaultKw: "0.0154", storeType: null, brands: [] },
-  { name: "Paket CCTV", category: "GUDANG", defaultKw: "0.182", storeType: null, brands: [] },
+  { name: "Exhaust Fan Ceiling 10 inch", category: "GUDANG", deviceCategory: "Lainnya", defaultKw: "0.026", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Lampu Bohlam 9 Watt (Sensor)", category: "GUDANG", deviceCategory: "Pencahayaan", defaultKw: "0.009", storeType: null, brands: ["Hannochs"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Bell Toko", category: "GUDANG", deviceCategory: "Lainnya", defaultKw: "0.0095", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Lampu TL Waterproof", category: "GUDANG", deviceCategory: "Pencahayaan", defaultKw: "0.0154", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Paket CCTV", category: "GUDANG", deviceCategory: "Lainnya", defaultKw: "0.182", storeType: null, brands: [], calcMethod: "STANDARD", calcDuration: null },
 
   // BEANSPOT
-  { name: "Coffee Maker", category: "BEANSPOT", defaultKw: "0.058919803601", storeType: "Beanspot", brands: ["Delonghi"] },
-  { name: "Oden Warmer", category: "BEANSPOT", defaultKw: "0.0059", storeType: "Beanspot", brands: [] },
-  { name: "Cup Sealer", category: "BEANSPOT", defaultKw: "0.0546875", storeType: "Beanspot", brands: [] },
-  { name: "Mesin Popcorn", category: "BEANSPOT", defaultKw: "0.003630555556", storeType: "Beanspot", brands: ["Sharp Jolly Time"] },
-  { name: "Oven", category: "BEANSPOT", defaultKw: "0.1142857143", storeType: "Beanspot", brands: ["Eka"] },
-  { name: "Mini Bar Chiller", category: "BEANSPOT", defaultKw: "0.009375", storeType: "Beanspot", brands: ["RS 06 DR"] },
-  { name: "Led TV", category: "BEANSPOT", defaultKw: "0.04", storeType: "Beanspot", brands: [] },
-  { name: "Chest Freezer Sosis", category: "BEANSPOT", defaultKw: "0.0338028169", storeType: "Beanspot", brands: [] },
-  { name: "Water Boiler", category: "BEANSPOT", defaultKw: "0.1390625", storeType: "Beanspot", brands: ["Akebono"] },
-  { name: "Display Cooler", category: "BEANSPOT", defaultKw: "0.1028169014", storeType: "Beanspot", brands: ["Expo"] },
-  { name: "Chest Freezer 460 L", category: "BEANSPOT", defaultKw: "0.1183098592", storeType: "Beanspot", brands: ["RSA"] },
-  { name: "Sliding Flat Glass Freezer", category: "BEANSPOT", defaultKw: "0.1377012771", storeType: "Beanspot", brands: [] },
+  { 
+    name: "Coffee Maker", 
+    category: "BEANSPOT", 
+    deviceCategory: "Lainnya", 
+    defaultKw: "0.058919803601", 
+    storeType: "Beanspot", 
+    brands: [{ name: "Delonghi", runningKw: "1.25", standbyKw: "0.05" }], 
+    calcMethod: "TRANSACTION", 
+    calcDuration: 60 
+  },
+  { name: "Oden Warmer", category: "BEANSPOT", deviceCategory: "Lainnya", defaultKw: "0.0059", storeType: "Beanspot", brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { 
+    name: "Cup Sealer", 
+    category: "BEANSPOT", 
+    deviceCategory: "Lainnya", 
+    defaultKw: "0.0546875", 
+    storeType: "Beanspot", 
+    brands: [{ name: "Standard Sealer", runningKw: "0.35", standbyKw: "0.01" }], 
+    calcMethod: "TRANSACTION", 
+    calcDuration: 30 
+  },
+  { name: "Mesin Popcorn", category: "BEANSPOT", deviceCategory: "Lainnya", defaultKw: "0.003630555556", storeType: "Beanspot", brands: ["Sharp Jolly Time"], calcMethod: "STANDARD", calcDuration: null },
+  { 
+    name: "Oven", 
+    category: "BEANSPOT", 
+    deviceCategory: "Lainnya", 
+    defaultKw: "0.1142857143", 
+    storeType: "Beanspot", 
+    brands: [{ name: "Eka", runningKw: "2.4", standbyKw: "0.1" }], 
+    calcMethod: "BATCH", 
+    calcDuration: 900 
+  },
+  { name: "Mini Bar Chiller", category: "BEANSPOT", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.009375", storeType: "Beanspot", brands: ["RS 06 DR"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Led TV", category: "BEANSPOT", deviceCategory: "Lainnya", defaultKw: "0.04", storeType: "Beanspot", brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Chest Freezer Sosis", category: "BEANSPOT", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.0338028169", storeType: "Beanspot", brands: [], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Water Boiler", category: "BEANSPOT", deviceCategory: "Lainnya", defaultKw: "0.1390625", storeType: "Beanspot", brands: ["Akebono"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Display Cooler", category: "BEANSPOT", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.1028169014", storeType: "Beanspot", brands: ["Expo"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Chest Freezer 460 L", category: "BEANSPOT", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.1183098592", storeType: "Beanspot", brands: ["RSA"], calcMethod: "STANDARD", calcDuration: null },
+  { name: "Sliding Flat Glass Freezer", category: "BEANSPOT", deviceCategory: "Sistem Pendingin Produk", defaultKw: "0.1377012771", storeType: "Beanspot", brands: [], calcMethod: "STANDARD", calcDuration: null },
 ]
 
 function hashPassword(password: string): string {
@@ -75,37 +102,84 @@ async function main() {
   console.log(
     `\n📦 Seeding ${equipmentData.length} equipment type records...`
   )
-  await prisma.equipmentBrand.deleteMany()
-  await prisma.equipmentType.deleteMany()
 
   let typeCount = 0
   let brandCount = 0
 
   for (const eq of equipmentData) {
-    const type = await prisma.equipmentType.create({
-      data: {
-        name: eq.name,
-        category: eq.category,
-        defaultKw: eq.defaultKw,
-        storeType: eq.storeType,
-      },
+    const existingType = await prisma.equipmentType.findFirst({
+      where: { name: eq.name },
     })
+
+    let type
+    if (existingType) {
+      type = await prisma.equipmentType.update({
+        where: { id: existingType.id },
+        data: {
+          category: eq.category,
+          deviceCategory: eq.deviceCategory,
+          defaultKw: eq.defaultKw,
+          storeType: eq.storeType,
+          calcMethod: eq.calcMethod,
+          calcDuration: eq.calcDuration,
+        },
+      })
+    } else {
+      type = await prisma.equipmentType.create({
+        data: {
+          name: eq.name,
+          category: eq.category,
+          deviceCategory: eq.deviceCategory,
+          defaultKw: eq.defaultKw,
+          storeType: eq.storeType,
+          calcMethod: eq.calcMethod,
+          calcDuration: eq.calcDuration,
+        },
+      })
+    }
     typeCount++
 
     if (eq.brands && eq.brands.length > 0) {
-      await prisma.equipmentBrand.createMany({
-        data: eq.brands.map((brandName) => ({
-          equipmentTypeId: type.id,
-          name: brandName,
-          baseKw: eq.defaultKw,
-        })),
-      })
-      brandCount += eq.brands.length
+      for (const brand of eq.brands) {
+        const isObj = typeof brand === "object" && brand !== null
+        const bName = isObj ? (brand as any).name : brand
+        const running = isObj ? (brand as any).runningKw : eq.defaultKw
+        const standby = isObj ? (brand as any).standbyKw : "0.0"
+
+        const existingBrand = await prisma.equipmentBrand.findFirst({
+          where: {
+            equipmentTypeId: type.id,
+            name: { equals: bName.trim(), mode: "insensitive" },
+          },
+        })
+
+        if (existingBrand) {
+          await prisma.equipmentBrand.update({
+            where: { id: existingBrand.id },
+            data: {
+              baseKw: eq.defaultKw,
+              runningKw: running,
+              standbyKw: standby,
+            },
+          })
+        } else {
+          await prisma.equipmentBrand.create({
+            data: {
+              equipmentTypeId: type.id,
+              name: bName,
+              baseKw: eq.defaultKw,
+              runningKw: running,
+              standbyKw: standby,
+            },
+          })
+          brandCount++
+        }
+      }
     }
   }
 
-  console.log(`   ✅ Created ${typeCount} equipment types`)
-  console.log(`   ✅ Created ${brandCount} equipment brands`)
+  console.log(`   ✅ Seeded ${typeCount} equipment types`)
+  console.log(`   ✅ Seeded new/updated equipment brands`)
 
   // ── 2. Stores ────────────────────────────────────────────────────────────
   console.log("\n🏪 Seeding stores...")
@@ -249,7 +323,7 @@ async function main() {
   })
 
   const demoStore2 = await prisma.store.upsert({
-    where: { code: "DEMO2" },
+    where: { code: "DEM2" },
     update: { branch: "DEMO" },
     create: {
       code: "DEM2",

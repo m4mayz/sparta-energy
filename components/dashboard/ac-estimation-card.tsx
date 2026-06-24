@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { IconAirConditioning, IconArrowRight } from "@tabler/icons-react"
 
@@ -8,6 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+
+const acUnavailableMessage =
+  "Fitur Kalkulator AC untuk sementara belum bisa digunakan. Mohon gunakan kalkulator AC versi Excel yang sudah dibagikan ke pengguna atau auditor."
 
 function AcEstimationCard() {
   return (
@@ -43,4 +48,4 @@ function AcEstimationCard() {
   )
 }
 
-export { AcEstimationCard }
+export { AcEstimationCard, acUnavailableMessage }

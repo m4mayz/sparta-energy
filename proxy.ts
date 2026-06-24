@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 // Guest-only routes: accessible only when not logged in.
 const guestOnlyRoutes = new Set(["/", "/login"])
@@ -29,7 +30,14 @@ export async function proxy(request: NextRequest) {
   const isGuestOnlyRoute = guestOnlyRoutes.has(pathname)
 
   if (isGuestOnlyRoute && isLoggedIn) {
-    const dashboardUrl = new URL("/dashboard", request.url)
+    const user = await prisma.user.findUnique({
+      where: { id: session?.user.id },
+      select: { role: true },
+    })
+    const dashboardUrl = new URL(
+      user?.role === "ADMIN" ? "/admin-entry" : "/dashboard",
+      request.url
+    )
     return NextResponse.redirect(dashboardUrl)
   }
 

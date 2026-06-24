@@ -18,6 +18,11 @@ export interface EquipmentState {
   endTimes: string[]
   selected: boolean
   isConfigured: boolean
+  calcMethod?: string
+  calcDuration?: number
+  usages?: number[]
+  runningKws?: number[]
+  standbyKws?: number[]
 }
 
 export interface PlnRowState {
@@ -63,6 +68,7 @@ export type DemoAuditResult = {
 
 interface AuditState {
   // session tracking
+  auditId: string | null
   storeCode: string
   storeName: string
 
@@ -99,6 +105,7 @@ interface AuditState {
 export const useAuditStore = create<AuditState>()(
   persist(
     (set) => ({
+      auditId: null,
       storeCode: "",
       storeName: "",
 

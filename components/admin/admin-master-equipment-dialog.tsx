@@ -127,6 +127,8 @@ export function AdminMasterEquipmentDialog({
   const [customDeviceCategory, setCustomDeviceCategory] = useState("")
   const [storeType, setStoreType] = useState("all") // "all" maps to null in DB
   const [defaultKw, setDefaultKw] = useState<number | "">("")
+  const [calcMethod, setCalcMethod] = useState("STANDARD")
+  const [calcDuration, setCalcDuration] = useState<number | "">("")
 
   const [brandName, setBrandName] = useState("")
   const [area, setArea] = useState<"SALES" | "PARKING" | "TERRACE" | "WAREHOUSE">("SALES")
@@ -183,6 +185,12 @@ export function AdminMasterEquipmentDialog({
 
       setStoreType(equipment.storeType || "all")
       setDefaultKw(equipment.defaultKw)
+      setCalcMethod(equipment.calcMethod || "STANDARD")
+      setCalcDuration(
+        equipment.calcMethod === "BATCH" && equipment.calcDuration
+          ? equipment.calcDuration / 60
+          : equipment.calcDuration ?? ""
+      )
 
       setBrandName(equipment.brandName)
       setArea(equipment.area)
@@ -201,6 +209,8 @@ export function AdminMasterEquipmentDialog({
       setCustomDeviceCategory("")
       setStoreType("all")
       setDefaultKw("")
+      setCalcMethod("STANDARD")
+      setCalcDuration("")
 
       setBrandName("")
       setArea("SALES")
@@ -253,6 +263,12 @@ export function AdminMasterEquipmentDialog({
 
         setStoreType(selectedType.storeType || "all")
         setDefaultKw(selectedType.defaultKw)
+        setCalcMethod(selectedType.calcMethod || "STANDARD")
+        setCalcDuration(
+          selectedType.calcMethod === "BATCH" && selectedType.calcDuration
+            ? selectedType.calcDuration / 60
+            : selectedType.calcDuration ?? ""
+        )
         // Auto-fill baseKw with defaultKw of type for convenience
         setBaseKw(selectedType.defaultKw)
         // Auto-select brand area target based on category
@@ -264,6 +280,8 @@ export function AdminMasterEquipmentDialog({
       setStoreType("all")
       setDefaultKw("")
       setBaseKw("")
+      setCalcMethod("STANDARD")
+      setCalcDuration("")
     }
   }
 
@@ -340,6 +358,14 @@ export function AdminMasterEquipmentDialog({
         payload.deviceCategory = cleanDeviceCategory
         payload.storeType = storeType === "all" ? null : storeType
         payload.defaultKw = Number(baseKw) // Opsi A: defaultKw disamakan dengan baseKw
+        payload.calcMethod = calcMethod
+        payload.calcDuration = calcMethod === "STANDARD"
+          ? null
+          : calcDuration === ""
+            ? null
+            : calcMethod === "BATCH"
+              ? Number(calcDuration) * 60
+              : Number(calcDuration)
       }
 
       const url = isCreateMode
@@ -575,6 +601,42 @@ export function AdminMasterEquipmentDialog({
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="eq-calc-method">Metode Kalkulasi *</Label>
+                  <Select
+                    value={calcMethod}
+                    onValueChange={setCalcMethod}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="eq-calc-method">
+                      <SelectValue placeholder="Pilih metode kalkulasi..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="STANDARD">STANDARD (Power × Hours)</SelectItem>
+                      <SelectItem value="TRANSACTION">TRANSACTION (Per Cup/Portion)</SelectItem>
+                      <SelectItem value="BATCH">BATCH (Per Baking Session)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {calcMethod !== "STANDARD" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="eq-calc-duration">
+                      Durasi ({calcMethod === "TRANSACTION" ? "Detik/Transaksi" : "Menit/Batch"}) *
+                    </Label>
+                    <Input
+                      id="eq-calc-duration"
+                      type="number"
+                      min="1"
+                      placeholder={calcMethod === "TRANSACTION" ? "Contoh: 60" : "Contoh: 15"}
+                      value={calcDuration}
+                      onChange={(e) => setCalcDuration(e.target.value === "" ? "" : Number(e.target.value))}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                )}
               </div>
             )}
 

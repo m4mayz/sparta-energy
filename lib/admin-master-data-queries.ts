@@ -84,6 +84,8 @@ export type MasterEquipmentRow = {
   productPhotoUrl: string | null
   nameplatePhotoUrl: string | null
   createdAt: string
+  calcMethod: string
+  calcDuration: number | null
 }
 
 export type MasterEquipmentTypeOption = {
@@ -93,6 +95,8 @@ export type MasterEquipmentTypeOption = {
   deviceCategory: string
   storeType: string | null
   defaultKw: number
+  calcMethod: string
+  calcDuration: number | null
 }
 
 export type MasterDataSummary = {
@@ -279,6 +283,7 @@ function serializeEquipmentRow(row: RawMasterEquipmentRow): MasterEquipmentRow {
     standbyKw: toNumber(row.standbyKw),
     runningKw: toNumber(row.runningKw),
     createdAt: new Date(row.createdAt).toISOString(),
+    calcDuration: row.calcDuration !== null && row.calcDuration !== undefined ? Number(row.calcDuration) : null,
   }
 }
 
@@ -702,6 +707,8 @@ export async function getMasterEquipmentTypeOptions(): Promise<
       deviceCategory: true,
       storeType: true,
       defaultKw: true,
+      calcMethod: true,
+      calcDuration: true,
     },
   })
 
@@ -712,6 +719,8 @@ export async function getMasterEquipmentTypeOptions(): Promise<
     deviceCategory: row.deviceCategory,
     storeType: row.storeType,
     defaultKw: Number(row.defaultKw),
+    calcMethod: row.calcMethod,
+    calcDuration: row.calcDuration,
   }))
 }
 
@@ -765,7 +774,9 @@ export async function getMasterEquipmentRows({
         et.store_type AS "storeType",
         eb.product_photo_url AS "productPhotoUrl",
         eb.nameplate_photo_url AS "nameplatePhotoUrl",
-        eb.created_at AS "createdAt"
+        eb.created_at AS "createdAt",
+        et.calc_method AS "calcMethod",
+        et.calc_duration AS "calcDuration"
       ${getEquipmentFromSql()}
       ${whereSql}
       ${orderBySql}

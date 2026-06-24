@@ -259,6 +259,12 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
     // ── 6. Create AuditItems (per equipment unit) ───────────────────────────────
     const selectedEquipments = input.equipments.filter((eq) => eq.selected)
 
+    // Fetch all equipment types to map name -> id, calcMethod, calcDuration
+    const eqTypes = await prisma.equipmentType.findMany({
+      select: { id: true, name: true, calcMethod: true, calcDuration: true },
+    })
+    const eqTypeMap = new Map(eqTypes.map((t) => [t.name.toLowerCase().trim(), t]))
+
     if (selectedEquipments.length > 0) {
       // Resolve brands
       for (const eq of selectedEquipments) {
@@ -274,9 +280,7 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
             : []
         const bKwsToProcess = eq.kws?.length ? eq.kws : [eq.kw]
 
-        const type = await prisma.equipmentType.findFirst({
-          where: { name: eq.name },
-        })
+        const type = eqTypeMap.get(eq.name.toLowerCase().trim())
         if (type) {
           for (let i = 0; i < bNamesToProcess.length; i++) {
             const bName = bNamesToProcess[i]
@@ -309,6 +313,11 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
 
       await prisma.auditItem.createMany({
         data: selectedEquipments.flatMap((eq) => {
+          const typeInfo = eqTypeMap.get(eq.name.toLowerCase().trim())
+          const eqTypeId = typeInfo?.id ?? null
+          const method = typeInfo?.calcMethod ?? eq.calcMethod ?? "STANDARD"
+          const duration = typeInfo?.calcDuration ?? eq.calcDuration ?? 0
+
           // For AC: create one row per unit with its own hours
           // For others: one row with qty and average hours
           const isAC =
@@ -323,6 +332,7 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
               const bKw = eq.kws?.[i] ?? eq.kw ?? 0
               return {
                 auditId: audit.id,
+                equipmentTypeId: eqTypeId,
                 areaTarget: toAreaTarget(eq.areaName),
                 customName: eq.name,
                 brandName: eq.brandNames?.[i] ?? eq.brandName,
@@ -339,9 +349,21 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
           const end = eq.endTimes[0] || "22:00"
           const hours = getHoursBetween(start, end)
           const bKw = eq.kws?.[0] ?? eq.kw ?? 0
+          const usageVal = eq.usages?.[0] ?? 0
+
+          let estDailyKwh = bKw * eq.quantity * hours
+          if (method === "TRANSACTION" || method === "BATCH") {
+            const hrsRunning = Math.min((usageVal * duration) / 3600, hours)
+            const hrsStandby = Math.max(0, hours - hrsRunning)
+            const runningKwVal = eq.runningKws?.[0] ?? bKw
+            const standbyKwVal = eq.standbyKws?.[0] ?? (runningKwVal * 0.05)
+            estDailyKwh = ((runningKwVal * hrsRunning) + (standbyKwVal * hrsStandby)) * eq.quantity
+          }
+
           return [
             {
               auditId: audit.id,
+              equipmentTypeId: eqTypeId,
               areaTarget: toAreaTarget(eq.areaName),
               customName: eq.name,
               brandName: eq.brandNames?.[0] ?? eq.brandName,
@@ -349,7 +371,8 @@ ${input.equipments.map((eq) => `- ${eq.quantity}x ${eq.name} = ${(eq.kw * eq.qua
               qty: eq.quantity,
               operationalHours: hours,
               baseKw: bKw,
-              estimatedDailyKwh: bKw * eq.quantity * hours,
+              estimatedDailyKwh: estDailyKwh,
+              usageCount: (method === "TRANSACTION" || method === "BATCH") ? usageVal : null,
             },
           ]
         }),

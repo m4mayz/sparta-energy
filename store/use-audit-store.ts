@@ -18,6 +18,11 @@ export interface EquipmentState {
   endTimes: string[]
   selected: boolean
   isConfigured: boolean
+  calcMethod?: string
+  calcDuration?: number
+  usages?: number[]
+  runningKws?: number[]
+  standbyKws?: number[]
 }
 
 export interface PlnRowState {

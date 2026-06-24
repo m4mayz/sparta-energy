@@ -86,6 +86,8 @@ model EquipmentType {
   deviceCategory String           @default("Lainnya") @map("device_category")
   defaultKw      Decimal          @map("default_kw")
   storeType      String?          @map("store_type")
+  calcMethod     String           @default("STANDARD") @map("calc_method")
+  calcDuration   Int?             @map("calc_duration")
   createdAt      DateTime         @default(now()) @map("created_at")
   
   brands      EquipmentBrand[]
@@ -144,6 +146,7 @@ model AuditItem {
   operationalHours  Decimal         @map("operational_hours")
   baseKw            Decimal         @map("base_kw")
   estimatedDailyKwh Decimal         @map("estimated_daily_kwh")
+  usageCount        Int?            @map("usage_count")
   
   audit             Audit           @relation(fields: [auditId], references: [id])
   equipmentType     EquipmentType?  @relation(fields: [equipmentTypeId], references: [id])

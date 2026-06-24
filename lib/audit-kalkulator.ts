@@ -46,12 +46,25 @@ export function calculateAudit(
     let eqKwhPerDay = 0
     const isAC = eq.name.toLowerCase().includes("ac") || eq.name.toLowerCase().includes("air conditioner")
     
+    const method = eq.calcMethod || "STANDARD"
+    const duration = eq.calcDuration || 0
+
     for (let i = 0; i < eq.quantity; i++) {
       const start = isAC ? (eq.startTimes[i] || "08:00") : (eq.startTimes[0] || "08:00")
       const end = isAC ? (eq.endTimes[i] || "22:00") : (eq.endTimes[0] || "22:00")
       const hrs = getHoursBetween(start, end)
 
-      eqKwhPerDay += eq.kw * hrs
+      const kwRunning = eq.runningKws?.[i] ?? eq.kws?.[i] ?? eq.kw ?? 0
+      const kwStandby = eq.standbyKws?.[i] ?? (kwRunning * 0.05)
+      const usageVal = eq.usages?.[i] ?? 0
+
+      if (method === "TRANSACTION" || method === "BATCH") {
+        const hrsRunning = Math.min((usageVal * duration) / 3600, hrs)
+        const hrsStandby = Math.max(0, hrs - hrsRunning)
+        eqKwhPerDay += (kwRunning * hrsRunning) + (kwStandby * hrsStandby)
+      } else {
+        eqKwhPerDay += kwRunning * hrs
+      }
 
       // Check training logic: e.g. AC nyala >> store open hours
       if (isAC && hrs >= storeOpenHours + 2 && storeOpenHours < 24) {

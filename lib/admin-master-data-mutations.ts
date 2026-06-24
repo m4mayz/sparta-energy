@@ -97,6 +97,11 @@ function getEquipmentTypePayload(data: Record<string, unknown>) {
   const name = getString(data, "equipmentName")
   const category = getString(data, "category")
   const deviceCategory = getString(data, "deviceCategory")
+  const calcMethod = getString(data, "calcMethod") || "STANDARD"
+  const calcDurationVal = data["calcDuration"]
+  const calcDuration = calcDurationVal !== undefined && calcDurationVal !== null && calcDurationVal !== ""
+    ? requirePositiveInteger(data, "calcDuration")
+    : null
 
   if (!name) throw new Error("Nama equipment wajib diisi")
   if (!category) throw new Error("Kategori wajib diisi")
@@ -108,6 +113,8 @@ function getEquipmentTypePayload(data: Record<string, unknown>) {
     deviceCategory,
     storeType: getOptionalString(data, "storeType"),
     defaultKw: requireNonNegativeNumber(data, "defaultKw"),
+    calcMethod,
+    calcDuration,
   }
 }
 

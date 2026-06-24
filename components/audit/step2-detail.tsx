@@ -44,6 +44,7 @@ import { useAuditStore } from "@/store/use-audit-store"
 import { TimeRangeCards } from "@/components/audit/time-range-cards"
 import { Header } from "@/components/header"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import type { AuditStepNavigate } from "@/app/audit/start/start-client"
 
 type EquipmentItem = {
@@ -63,6 +64,11 @@ type EquipmentItem = {
   startTimes?: string[]
   endTimes?: string[]
   isConfigured?: boolean
+  usages?: number[]
+  runningKws?: number[]
+  standbyKws?: number[]
+  calcMethod?: string
+  calcDuration?: number
 }
 
 type Step2DetailProps = {
@@ -79,7 +85,16 @@ type Step2DetailProps = {
     category: string
     deviceCategory: string
     defaultKw: number
-    brands: Array<{ id: string; name: string; baseKw: number; productPhotoUrl?: string | null }>
+    calcMethod?: string
+    calcDuration?: number | null
+    brands: Array<{
+      id: string
+      name: string
+      baseKw: number
+      productPhotoUrl?: string | null
+      runningKw?: number
+      standbyKw?: number
+    }>
   }>
 }
 
@@ -277,6 +292,9 @@ export function AuditStep2Detail({
       detail: `Daya: ${formatKw(m.defaultKw)} kW`,
       kw: m.defaultKw,
       quantity: 1,
+      calcMethod: m.calcMethod,
+      calcDuration: m.calcDuration || 0,
+      usages: [m.calcMethod === "TRANSACTION" ? 50 : m.calcMethod === "BATCH" ? 6 : 0],
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredMasterItems, areaId])
@@ -308,6 +326,11 @@ export function AuditStep2Detail({
         startTimes: e.startTimes,
         endTimes: e.endTimes,
         isConfigured: e.isConfigured ?? false,
+        calcMethod: e.calcMethod,
+        calcDuration: e.calcDuration,
+        usages: e.usages,
+        runningKws: e.runningKws,
+        standbyKws: e.standbyKws,
       }))
     }
     // Fall back to DB master items (no mock fallback)
@@ -343,6 +366,11 @@ export function AuditStep2Detail({
         endTimes: i.endTimes || Array(i.quantity || 1).fill("22:00"),
         selected: !!i.selected,
         isConfigured: !!i.isConfigured,
+        calcMethod: i.calcMethod,
+        calcDuration: i.calcDuration,
+        usages: i.usages || Array(i.quantity || 1).fill(i.calcMethod === "TRANSACTION" ? 50 : i.calcMethod === "BATCH" ? 6 : 0),
+        runningKws: i.runningKws || Array(i.quantity || 1).fill(i.kw ?? 0),
+        standbyKws: i.standbyKws || Array(i.quantity || 1).fill((i.kw ?? 0) * 0.05),
       }))
     )
   }, [items, areaName, syncEqs])
@@ -355,13 +383,27 @@ export function AuditStep2Detail({
       const isAC =
         eq.name.toLowerCase().includes("ac") ||
         eq.name.toLowerCase().includes("air conditioner")
+      const method = eq.calcMethod || "STANDARD"
+      const duration = eq.calcDuration || 0
+
       for (let i = 0; i < eq.quantity; i++) {
         const start = isAC
           ? eq.startTimes[i] || "08:00"
           : eq.startTimes[0] || "08:00"
         const end = isAC ? eq.endTimes[i] || "22:00" : eq.endTimes[0] || "22:00"
         const hrs = getSingleDuration(start, end)
-        totalDailyKwh += eq.kw * hrs
+        
+        const kwRunning = eq.runningKws?.[i] ?? eq.kws?.[i] ?? eq.kw ?? 0
+        const kwStandby = eq.standbyKws?.[i] ?? (kwRunning * 0.05)
+        const usageVal = eq.usages?.[i] ?? 0
+
+        if (method === "TRANSACTION" || method === "BATCH") {
+          const hrsRunning = Math.min((usageVal * duration) / 3600, hrs)
+          const hrsStandby = Math.max(0, hrs - hrsRunning)
+          totalDailyKwh += (kwRunning * hrsRunning) + (kwStandby * hrsStandby)
+        } else {
+          totalDailyKwh += kwRunning * hrs
+        }
       }
     })
     console.log("==================================================")
@@ -403,6 +445,9 @@ export function AuditStep2Detail({
     )
   )
   const [isItemAllDay, setIsItemAllDay] = React.useState<boolean[]>([])
+  const [usages, setUsages] = React.useState<number[]>([])
+  const [runningKws, setRunningKws] = React.useState<number[]>([])
+  const [standbyKws, setStandbyKws] = React.useState<number[]>([])
 
   const activeEquipment = React.useMemo(() => {
     return (
@@ -425,25 +470,40 @@ export function AuditStep2Detail({
     (activeEquipment.name || "").toLowerCase().includes("air conditioner")
   const timesToRender = isAC ? quantity : 1
 
-  const calcEqDailyKwh = (
-    name: string,
-    kws: number[],
-    qty: number,
-    starts: string[],
-    ends: string[]
-  ) => {
+  const calcEqDailyKwh = (eq: EquipmentItem) => {
     const isEqAC =
-      (name || "").toLowerCase().includes("ac") ||
-      (name || "").toLowerCase().includes("air conditioner")
+      (eq.name || "").toLowerCase().includes("ac") ||
+      (eq.name || "").toLowerCase().includes("air conditioner")
+    const qty = eq.quantity || 1
+    const method = eq.calcMethod || "STANDARD"
+    const duration = eq.calcDuration || 0
     let sumKwh = 0
+
     if (isEqAC) {
       for (let i = 0; i < qty; i++) {
-        const unitKw = kws[i] ?? kws[0] ?? 0
-        sumKwh += unitKw * getSingleDuration(starts[i], ends[i])
+        const unitKw = eq.kws?.[i] ?? eq.kw ?? 0
+        const start = eq.startTimes?.[i] || "08:00"
+        const end = eq.endTimes?.[i] || "22:00"
+        sumKwh += unitKw * getSingleDuration(start, end)
       }
     } else {
-      const unitKw = kws[0] ?? 0
-      sumKwh += unitKw * getSingleDuration(starts[0], ends[0]) * qty
+      const start = eq.startTimes?.[0] || "08:00"
+      const end = eq.endTimes?.[0] || "22:00"
+      const hrs = getSingleDuration(start, end)
+
+      for (let i = 0; i < qty; i++) {
+        const kwRunning = eq.runningKws?.[i] ?? eq.kws?.[i] ?? eq.kw ?? 0
+        const kwStandby = eq.standbyKws?.[i] ?? (kwRunning * 0.05)
+        const usageVal = eq.usages?.[i] ?? 0
+
+        if (method === "TRANSACTION" || method === "BATCH") {
+          const hrsRunning = Math.min((usageVal * duration) / 3600, hrs)
+          const hrsStandby = Math.max(0, hrs - hrsRunning)
+          sumKwh += (kwRunning * hrsRunning) + (kwStandby * hrsStandby)
+        } else {
+          sumKwh += kwRunning * hrs
+        }
+      }
     }
     return sumKwh
   }
@@ -475,7 +535,21 @@ export function AuditStep2Detail({
       : (activeEquipment.kw ??
         parseFloat(activeEquipment.detail?.replace(/[^\d.]/g, "") || "0"))
     const duration = getSingleDuration(startTimes[0], endTimes[0])
-    activeKwh += unitKw * duration * quantity
+
+    const method = activeEquipment.calcMethod || "STANDARD"
+    const cycleDuration = activeEquipment.calcDuration || 0
+    const usageVal = usages[0] ?? 0
+
+    const kwRunning = matchedBrand ? (matchedBrand.runningKw ?? unitKw) : (runningKws[0] ?? unitKw)
+    const kwStandby = matchedBrand ? (matchedBrand.standbyKw ?? unitKw * 0.05) : (standbyKws[0] ?? unitKw * 0.05)
+
+    if (method === "TRANSACTION" || method === "BATCH") {
+      const hrsRunning = Math.min((usageVal * cycleDuration) / 3600, duration)
+      const hrsStandby = Math.max(0, duration - hrsRunning)
+      activeKwh += ((kwRunning * hrsRunning) + (kwStandby * hrsStandby)) * quantity
+    } else {
+      activeKwh += unitKw * duration * quantity
+    }
     activeHrsSum = duration * quantity
   }
   const activeKwDisplay =
@@ -484,23 +558,7 @@ export function AuditStep2Detail({
 
   const totalAreaDailyKwh = items
     .filter((i) => i.selected)
-    .reduce((acc, eq) => {
-      const fallbackKw =
-        eq.kw ?? parseFloat(eq.detail?.replace(/[^\d.]/g, "") || "0")
-      const qty = eq.quantity || 1
-      const kwsArray =
-        eq.kws && eq.kws.length > 0 ? eq.kws : Array(qty).fill(fallbackKw)
-      return (
-        acc +
-        calcEqDailyKwh(
-          eq.name,
-          kwsArray,
-          qty,
-          eq.startTimes || [],
-          eq.endTimes || []
-        )
-      )
-    }, 0)
+    .reduce((acc, eq) => acc + calcEqDailyKwh(eq), 0)
 
   React.useEffect(() => {
     setQuantity(activeEquipment.quantity ?? 1)
@@ -532,6 +590,21 @@ export function AuditStep2Detail({
         (_, i) => starts[i] === "00:00" && ends[i] === "23:59"
       )
     )
+
+    const defaultUsages = eq?.usages && eq.usages.length === qty
+      ? eq.usages
+      : Array(qty).fill(eq?.usages?.[0] ?? (eq?.calcMethod === "TRANSACTION" ? 50 : eq?.calcMethod === "BATCH" ? 6 : 0))
+    setUsages(defaultUsages)
+
+    const defaultRunningKws = eq?.runningKws && eq.runningKws.length === qty
+      ? eq.runningKws
+      : Array(qty).fill(eq?.runningKws?.[0] ?? eq?.kw ?? 0)
+    const defaultStandbyKws = eq?.standbyKws && eq.standbyKws.length === qty
+      ? eq.standbyKws
+      : Array(qty).fill(eq?.standbyKws?.[0] ?? (eq?.kw ?? 0) * 0.05)
+    setRunningKws(defaultRunningKws)
+    setStandbyKws(defaultStandbyKws)
+
     setIsConfigOpen(true)
   }
 
@@ -546,6 +619,9 @@ export function AuditStep2Detail({
       setEndTimes((arr) => [...arr, newEnd])
       setBrandNames((arr) => [...arr, arr[0] || ""])
       setIsItemAllDay((arr) => [...arr, false])
+      setUsages((arr) => [...arr, arr[0] ?? (activeEquipment.calcMethod === "TRANSACTION" ? 50 : activeEquipment.calcMethod === "BATCH" ? 6 : 0)])
+      setRunningKws((arr) => [...arr, arr[0] ?? activeEquipment.kw ?? 0])
+      setStandbyKws((arr) => [...arr, arr[0] ?? (activeEquipment.kw ?? 0) * 0.05])
       return next
     })
   }
@@ -557,6 +633,9 @@ export function AuditStep2Detail({
       setEndTimes((arr) => arr.slice(0, next))
       setBrandNames((arr) => arr.slice(0, next))
       setIsItemAllDay((arr) => arr.slice(0, next))
+      setUsages((arr) => arr.slice(0, next))
+      setRunningKws((arr) => arr.slice(0, next))
+      setStandbyKws((arr) => arr.slice(0, next))
       return next
     })
   }
@@ -699,10 +778,13 @@ export function AuditStep2Detail({
                       endTimes: ["22:00"],
                       selected: true,
                       isConfigured: false,
+                      calcMethod: availEq.calcMethod,
+                      calcDuration: availEq.calcDuration ?? undefined,
+                      usages: [availEq.calcMethod === "TRANSACTION" ? 50 : availEq.calcMethod === "BATCH" ? 6 : 0],
                     }
                     setItems((prev) => [...prev, newItem])
                     setIsAddOpen(false)
-                    setTimeout(() => handleConfigure(newItem), 150)
+                    setTimeout(() => handleConfigure(newItem as EquipmentItem), 150)
                   }}
                 >
                   <div>
@@ -800,6 +882,30 @@ export function AuditStep2Detail({
                             ? [...prev, ...Array(val - prev.length).fill(false)]
                             : prev.slice(0, val)
                         )
+                        setUsages((prev) =>
+                          val > prev.length
+                            ? [
+                                ...prev,
+                                ...Array(val - prev.length).fill(prev[0] ?? (activeEquipment.calcMethod === "TRANSACTION" ? 50 : activeEquipment.calcMethod === "BATCH" ? 6 : 0)),
+                              ]
+                            : prev.slice(0, val)
+                        )
+                        setRunningKws((prev) =>
+                          val > prev.length
+                            ? [
+                                ...prev,
+                                ...Array(val - prev.length).fill(prev[0] ?? activeEquipment.kw ?? 0),
+                              ]
+                            : prev.slice(0, val)
+                        )
+                        setStandbyKws((prev) =>
+                          val > prev.length
+                            ? [
+                                ...prev,
+                                ...Array(val - prev.length).fill(prev[0] ?? (activeEquipment.kw ?? 0) * 0.05),
+                              ]
+                            : prev.slice(0, val)
+                        )
                       }}
                       type="number"
                       min={1}
@@ -863,13 +969,30 @@ export function AuditStep2Detail({
                             <BrandCombobox
                               brands={activeMaster?.brands || []}
                               value={brandNames[idx] || ""}
-                              onChange={(val) =>
+                              onChange={(val) => {
+                                const matchedBrand = activeMaster?.brands?.find(
+                                  (b) => b.name.toLowerCase() === val.toLowerCase().trim()
+                                )
+                                const nextKw = matchedBrand ? matchedBrand.baseKw : (activeMaster?.defaultKw ?? activeEquipment.kw ?? 0)
+                                const nextRunning = matchedBrand ? (matchedBrand.runningKw ?? nextKw) : nextKw
+                                const nextStandby = matchedBrand ? (matchedBrand.standbyKw ?? nextKw * 0.05) : nextKw * 0.05
+
                                 setBrandNames((prev) => {
                                   const next = [...prev]
                                   next[idx] = val
                                   return next
                                 })
-                              }
+                                setRunningKws((prev) => {
+                                  const next = [...prev]
+                                  next[idx] = nextRunning
+                                  return next
+                                })
+                                setStandbyKws((prev) => {
+                                  const next = [...prev]
+                                  next[idx] = nextStandby
+                                  return next
+                                })
+                              }}
                             />
                           </div>
                         </div>
@@ -950,6 +1073,41 @@ export function AuditStep2Detail({
                         </span>
                       </p>
                     </div>
+
+                    {/* Input untuk TRANSACTION / BATCH */}
+                    {activeEquipment.calcMethod && activeEquipment.calcMethod !== "STANDARD" && (
+                      <div className="space-y-2 rounded-xl border border-input bg-muted/20 p-3 mt-4">
+                        <Label htmlFor={`eq-usage-${idx}`} className="text-xs font-bold text-foreground">
+                          {activeEquipment.calcMethod === "TRANSACTION"
+                            ? "Estimasi Penjualan (Cup/Hari)"
+                            : "Frekuensi Penggunaan (Kali/Hari)"}
+                        </Label>
+                        <Input
+                          id={`eq-usage-${idx}`}
+                          type="number"
+                          min={0}
+                          value={usages[idx] ?? 0}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0
+                            setUsages((prev) => {
+                              const next = [...prev]
+                              next[idx] = val
+                              return next
+                            })
+                          }}
+                          className="h-10"
+                          placeholder={activeEquipment.calcMethod === "TRANSACTION" ? "Contoh: 50" : "Contoh: 6"}
+                        />
+                        <div className="text-[11px] text-muted-foreground leading-normal flex items-start gap-1.5">
+                          <IconInfoCircle className="size-3.5 shrink-0 text-primary mt-0.5" />
+                          <span>
+                            {activeEquipment.calcMethod === "TRANSACTION"
+                              ? `Durasi pemakaian alat terhitung otomatis selama ${activeEquipment.calcDuration ?? 0} detik setiap kali transaksi cup.`
+                              : `Durasi pemakaian alat terhitung otomatis selama ${Math.round((activeEquipment.calcDuration ?? 0) / 60)} menit setiap kali proses batch baking.`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -968,7 +1126,9 @@ export function AuditStep2Detail({
                     <span className="mt-0.5 text-xs text-muted-foreground">
                       {isAC
                         ? `${formatKw(activeKwDisplay)} kW (base) × ${activeHrsSum.toFixed(1).replace(/\.0$/, "")} Jam Total`
-                        : `${formatKw(activeKwDisplay)} kW (base) × ${quantity} Unit × ${getSingleDuration(startTimes[0], endTimes[0]).toFixed(1).replace(/\.0$/, "")} Jam`}
+                        : activeEquipment.calcMethod === "TRANSACTION" || activeEquipment.calcMethod === "BATCH"
+                          ? `Running: ${formatKw(usages[0] ? (runningKws[0] ?? activeKwDisplay) : activeKwDisplay)} kW, Standby: ${formatKw(standbyKws[0] ?? activeKwDisplay * 0.05)} kW`
+                          : `${formatKw(activeKwDisplay)} kW (base) × ${quantity} Unit × ${getSingleDuration(startTimes[0], endTimes[0]).toFixed(1).replace(/\.0$/, "")} Jam`}
                     </span>
                   </div>
                 </div>
@@ -1018,6 +1178,27 @@ export function AuditStep2Detail({
                           : (activeMaster?.defaultKw ?? eq.kw ?? 0)
                       })
 
+                      const finalRunningKws = finalBrandNames.map((name, i) => {
+                        const bName = name || ""
+                        const matchedBrand = activeMaster?.brands?.find(
+                          (b) =>
+                            b.name.toLowerCase() === bName.toLowerCase().trim()
+                        )
+                        return matchedBrand
+                          ? (matchedBrand.runningKw ?? matchedBrand.baseKw)
+                          : (runningKws[i] ?? eq.kw ?? 0)
+                      })
+                      const finalStandbyKws = finalBrandNames.map((name, i) => {
+                        const bName = name || ""
+                        const matchedBrand = activeMaster?.brands?.find(
+                          (b) =>
+                            b.name.toLowerCase() === bName.toLowerCase().trim()
+                        )
+                        return matchedBrand
+                          ? (matchedBrand.standbyKw ?? matchedBrand.baseKw * 0.05)
+                          : (standbyKws[i] ?? (eq.kw ?? 0) * 0.05)
+                      })
+
                       return {
                         ...eq,
                         brandName: finalBrandNames[0] || "",
@@ -1030,6 +1211,9 @@ export function AuditStep2Detail({
                         endTimes,
                         isConfigured: true,
                         selected: true,
+                        usages,
+                        runningKws: finalRunningKws,
+                        standbyKws: finalStandbyKws,
                       }
                     })
                   )

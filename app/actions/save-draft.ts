@@ -124,11 +124,22 @@ export async function saveAuditDraft(input: SaveDraftInput) {
         where: { auditId },
       })
 
+      // Fetch all equipment types to map name -> id, calcMethod, calcDuration
+      const eqTypes = await prisma.equipmentType.findMany({
+        select: { id: true, name: true, calcMethod: true, calcDuration: true },
+      })
+      const eqTypeMap = new Map(eqTypes.map((t) => [t.name.toLowerCase().trim(), t]))
+
       // We only insert items that are configured/selected or present in equipments
       const selectedEquipments = input.equipments.filter((eq) => eq.selected)
       if (selectedEquipments.length > 0) {
         const itemsToCreate = []
         for (const eq of selectedEquipments) {
+          const typeInfo = eqTypeMap.get(eq.name.toLowerCase().trim())
+          const eqTypeId = typeInfo?.id ?? null
+          const method = typeInfo?.calcMethod ?? eq.calcMethod ?? "STANDARD"
+          const duration = typeInfo?.calcDuration ?? eq.calcDuration ?? 0
+
           const isAC =
             eq.name.toLowerCase().includes("ac") ||
             eq.name.toLowerCase().includes("air conditioner")
@@ -142,6 +153,7 @@ export async function saveAuditDraft(input: SaveDraftInput) {
 
               itemsToCreate.push({
                 auditId,
+                equipmentTypeId: eqTypeId,
                 areaTarget: toAreaTarget(eq.areaName),
                 customName: eq.name,
                 brandName: eq.brandNames?.[i] ?? eq.brandName ?? "",
@@ -157,9 +169,20 @@ export async function saveAuditDraft(input: SaveDraftInput) {
             const end = eq.endTimes?.[0] || "22:00"
             const hours = getSingleDuration(start, end)
             const bKw = eq.kws?.[0] ?? eq.kw ?? 0
+            const usageVal = eq.usages?.[0] ?? 0
+
+            let estDailyKwh = bKw * eq.quantity * hours
+            if (method === "TRANSACTION" || method === "BATCH") {
+              const hrsRunning = Math.min((usageVal * duration) / 3600, hours)
+              const hrsStandby = Math.max(0, hours - hrsRunning)
+              const runningKwVal = eq.runningKws?.[0] ?? bKw
+              const standbyKwVal = eq.standbyKws?.[0] ?? (runningKwVal * 0.05)
+              estDailyKwh = ((runningKwVal * hrsRunning) + (standbyKwVal * hrsStandby)) * eq.quantity
+            }
 
             itemsToCreate.push({
               auditId,
+              equipmentTypeId: eqTypeId,
               areaTarget: toAreaTarget(eq.areaName),
               customName: eq.name,
               brandName: eq.brandNames?.[0] ?? eq.brandName ?? "",
@@ -167,7 +190,8 @@ export async function saveAuditDraft(input: SaveDraftInput) {
               qty: eq.quantity,
               operationalHours: hours,
               baseKw: bKw,
-              estimatedDailyKwh: bKw * eq.quantity * hours,
+              estimatedDailyKwh: estDailyKwh,
+              usageCount: (method === "TRANSACTION" || method === "BATCH") ? usageVal : null,
             })
           }
         }
@@ -230,7 +254,12 @@ export async function getAuditDraft(auditId: string) {
       },
       include: {
         store: true,
-        items: true,
+        items: {
+          include: {
+            equipmentType: true,
+            equipmentBrand: true,
+          },
+        },
         plnHistory: {
           orderBy: { monthIdx: "asc" },
         },
@@ -281,6 +310,9 @@ export async function getAuditDraft(auditId: string) {
       let brandIds: (string | undefined)[] = []
       let brandNames: string[] = []
       let kws: number[] = []
+      let usagesArr: number[] = []
+      let runningKwsArr: number[] = []
+      let standbyKwsArr: number[] = []
 
       const formatTime = (hours: number) => {
         const startHour = 8
@@ -302,6 +334,9 @@ export async function getAuditDraft(auditId: string) {
           brandIds.push(item.equipmentBrandId || undefined)
           brandNames.push(item.brandName || "")
           kws.push(Number(item.baseKw))
+          usagesArr.push(0)
+          runningKwsArr.push(Number(item.equipmentBrand?.runningKw ?? item.baseKw))
+          standbyKwsArr.push(Number(item.equipmentBrand?.standbyKw ?? Number(item.baseKw) * 0.05))
         })
       } else {
         quantity = items.reduce((sum, item) => sum + item.qty, 0)
@@ -311,6 +346,11 @@ export async function getAuditDraft(auditId: string) {
         brandIds = Array(quantity).fill(first.equipmentBrandId || undefined)
         brandNames = Array(quantity).fill(first.brandName || "")
         kws = Array(quantity).fill(Number(first.baseKw))
+
+        const usageVal = first.usageCount ?? (first.equipmentType?.calcMethod === "TRANSACTION" ? 50 : first.equipmentType?.calcMethod === "BATCH" ? 6 : 0)
+        usagesArr = Array(quantity).fill(usageVal)
+        runningKwsArr = Array(quantity).fill(Number(first.equipmentBrand?.runningKw ?? first.baseKw))
+        standbyKwsArr = Array(quantity).fill(Number(first.equipmentBrand?.standbyKw ?? Number(first.baseKw) * 0.05))
       }
 
       equipments.push({
@@ -328,6 +368,11 @@ export async function getAuditDraft(auditId: string) {
         endTimes,
         selected: true,
         isConfigured: true,
+        calcMethod: first.equipmentType?.calcMethod ?? "STANDARD",
+        calcDuration: first.equipmentType?.calcDuration ?? 0,
+        usages: usagesArr,
+        runningKws: runningKwsArr,
+        standbyKws: standbyKwsArr,
       })
     })
 

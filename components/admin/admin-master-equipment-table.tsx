@@ -329,6 +329,7 @@ export function AdminMasterEquipmentTable({
               <TableHead>
                 <SortableHeader column="area">Target Area Brand</SortableHeader>
               </TableHead>
+              <TableHead>Metode Kalkulasi</TableHead>
               <TableHead className="text-right">
                 <SortableHeader column="baseKw" align="right">
                   Default kW
@@ -388,7 +389,7 @@ export function AdminMasterEquipmentTable({
                       </p>
                       {item.nameplatePhotoUrl && (
                         <button
-                          type="button"
+                           type="button"
                           onClick={() => handleViewPhoto(item.nameplatePhotoUrl!, `Name Plate - ${item.brandName}`)}
                           className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline"
                         >
@@ -410,6 +411,20 @@ export function AdminMasterEquipmentTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{item.area}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-0.5">
+                    <Badge variant={item.calcMethod === "STANDARD" ? "outline" : "secondary"}>
+                      {item.calcMethod}
+                    </Badge>
+                    {item.calcMethod !== "STANDARD" && item.calcDuration && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {item.calcMethod === "TRANSACTION"
+                          ? `${item.calcDuration} detik`
+                          : `${item.calcDuration / 60} menit`}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatNumber(item.baseKw)}
